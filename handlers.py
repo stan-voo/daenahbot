@@ -58,7 +58,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await context.bot.send_photo(
         chat_id=update.effective_chat.id,
         photo=photo_file_id,
-        caption=welcome_caption
+        caption=welcome_caption,
+        read_timeout=20,
+        write_timeout=20
     )
     # --- End of new section ---
     
