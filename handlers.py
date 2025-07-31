@@ -17,7 +17,8 @@ from database import (
     get_or_create_user, 
     update_user_profile,
     get_report_by_id, 
-    update_report_status
+    update_report_status,
+    update_user_balance # <-- ADD THIS
 )
 
 # Enable logging
@@ -41,27 +42,34 @@ NEW_REPORT_KEYBOARD = ReplyKeyboardMarkup([["➕ New Report"]], resize_keyboard=
 # --- Start & Cancel ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Starts the conversation and asks for the accident location."""
+    """Starts the conversation, shows a welcome message, and asks for the accident location."""
     user = update.message.from_user
     logger.info("User %s started the conversation.", user.first_name)
     
-    # Onboard the user if they are new
+    # --- NEW: Send welcome message and image ---
+    # Replace 'YOUR_FILE_ID_HERE' with the actual file_id you obtained
+    photo_file_id = 'AgACAgQAAxkBAAPCaIu8_FQu7pFVNR7X8AAB5O_shWW2AALfxzEbZKFhUOKlznwiwuHuAQADAgADeAADNgQ' 
+    welcome_caption = (
+        "Welcome to Kazabot! We've added a starting balance of 99 ₺ to your account for joining us. "
+        "For every accident report you submit that is verified by our team, you will earn a 100 ₺ reward. "
+        "You can withdraw your earnings once your total balance reaches 500 ₺.\n\n"
+        "Let's get started! Please share the accident's location by pressing the button below."
+    )
+    await context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=photo_file_id,
+        caption=welcome_caption
+    )
+    # --- End of new section ---
+    
+    # Onboard the user if they are new and set initial balance
     get_or_create_user(user.id, user.username)
-
-    # Check report limit
-    # Note: A more robust implementation would check this *before* starting.
-    # We place it here for simplicity in the conversation flow.
-    # report_count = get_user_report_count_today(user.id)
-    # if report_count >= 3:
-    #     await update.message.reply_text("You have reached your daily report limit (3). Please try again tomorrow.")
-    #     return ConversationHandler.END
 
     location_keyboard = KeyboardButton(text="Share Accident Location", request_location=True)
     custom_keyboard = [[location_keyboard]]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard, resize_keyboard=True, one_time_keyboard=True)
 
     await update.message.reply_text(
-        "Welcome to KazaBot! Help us by reporting minor accidents and get rewarded.\n\n"
         "Please press the button below to share the accident's location.",
         reply_markup=reply_markup,
     )
@@ -179,30 +187,35 @@ async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Notify admins
     await notify_admins(context, user, report_id, report_data)
     
-    # Check if company name is needed
-    if user_profile.get('courier_company') is None:
-        await update.message.reply_text(
-            "✅ Success! Your report has been submitted.\n\n"
-            "To help us, could you tell us which courier company you work for? (e.g., 'Getir', 'Trendyol Go'). This is optional.",
-             reply_markup=ReplyKeyboardRemove(),
-        )
-        return COMPANY_NAME
-    else:
-        # If company name is known, end the conversation
-        return await finish(update, context)
+    # --- MODIFICATION: Temporarily disable company name question ---
+    # if user_profile.get('courier_company') is None:
+    #     await update.message.reply_text(
+    #         "✅ Success! Your report has been submitted.\n\n"
+    #         "To help us, could you tell us which courier company you work for? (e.g., 'Getir', 'Trendyol Go'). This is optional.",
+    #          reply_markup=ReplyKeyboardRemove(),
+    #     )
+    #     return COMPANY_NAME
+    # else:
+    #     # If company name is known, end the conversation
+    #     return await finish(update, context)
+    await update.message.reply_text("✅ Success! Your report has been submitted.\n\n")
+    return await finish(update, context) # Always go to the finish state
+    # --- End of modification ---
 
 
-async def company_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Saves the user's courier company and ends the conversation."""
-    user_id = update.message.from_user.id
-    company = update.message.text
+# --- MODIFICATION: Comment out the unused handler ---
+# async def company_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+#     """Saves the user's courier company and ends the conversation."""
+#     user_id = update.message.from_user.id
+#     company = update.message.text
     
-    update_user_profile(user_id, {'courier_company': company})
-    logger.info("User %s set their company to %s", update.message.from_user.first_name, company)
+#     update_user_profile(user_id, {'courier_company': company})
+#     logger.info("User %s set their company to %s", update.message.from_user.first_name, company)
     
-    await update.message.reply_text("Thank you! Your profile has been updated.")
+#     await update.message.reply_text("Thank you! Your profile has been updated.")
     
-    return await finish(update, context)
+#     return await finish(update, context)
+# --- End of modification ---
 
 
 async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -289,11 +302,17 @@ async def review_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # Notify the original user
     original_user_id = report['telegram_user_id']
-    user_notification = f"UPDATE: Your report (ID: {report_id}) has been {new_status}."
+    user_notification = f"UPDATE: Your report (ID: {report['report_id']}) has been {new_status}."
     
     if new_status == 'verified':
-        user_notification += "\n\nCongratulations! You may be eligible for a reward. We will be in touch about payouts soon."
-        # Here you would trigger the payout logic in the future
+        # --- NEW: Update balance and notify user ---
+        reward_amount = 100 # Define your reward amount here
+        new_balance = update_user_balance(original_user_id, reward_amount)
+        user_notification += (
+            f"\n\nCongratulations! {reward_amount} TL has been added to your account. "
+            f"Your new balance is {new_balance} TL."
+        )
+        # --- End of new section ---
     
     try:
         await context.bot.send_message(

@@ -18,7 +18,7 @@ from handlers import (
     description_skip,
     crash_time_delta,
     submit,
-    company_name,
+        # company_name, # Comment out
     cancel,
     review_handler,
     LOCATION,
@@ -26,7 +26,7 @@ from handlers import (
     DESCRIPTION,
     CRASH_TIME_DELTA,
     CONFIRMATION,
-    COMPANY_NAME,
+        # COMPANY_NAME, # Comment out
 )
 
 # Enable logging
@@ -60,7 +60,7 @@ def main() -> None:
                 MessageHandler(filters.Regex(r"(?i)^Submit Report$"), submit),
                 MessageHandler(filters.Regex(r"(?i)^Cancel$"), cancel),
             ],
-            COMPANY_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, company_name)],
+            # COMPANY_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, company_name)], # Comment out this line
         },
         fallbacks=[CommandHandler("cancel", cancel)],
         per_message=False # Ensures conversation context is consistent

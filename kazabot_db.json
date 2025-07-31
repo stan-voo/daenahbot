@@ -14,7 +14,8 @@
             "created_at": "2025-07-30T19:24:09.028355",
             "courier_company": "Getir",
             "payment_method": null,
-            "report_count": 6
+            "report_count": 10,
+            "balance": 200
         }
     },
     "reports": {
@@ -130,8 +131,76 @@
             "description": "\ud83d\ude0d\ud83d\ude01\ud83d\ude0d\ud83d\ude01\ud83d\udc8b\ud83d\ude2d\ud83d\ude33\ud83d\ude1d",
             "crash_time_delta": 0,
             "submitted_at": "2025-07-31T17:48:57.947763",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "8": {
+            "report_id": "779ed8b2-7b0e-485b-93c7-37c0592f2d03",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432996,
+                27.163818
+            ],
+            "location_time": "2025-07-31T18:59:01.366378",
+            "photo_file_id": "AgACAgQAAxkBAAPCaIu8_FQu7pFVNR7X8AAB5O_shWW2AALfxzEbZKFhUOKlznwiwuHuAQADAgADeAADNgQ",
+            "photo_time": "2025-07-31T18:59:08.259151",
+            "description": null,
+            "crash_time_delta": 0,
+            "submitted_at": "2025-07-31T18:59:15.958670",
             "status": "pending",
             "reward_sent": false
+        },
+        "9": {
+            "report_id": "e96c69da-4df8-46e2-b068-4134bf39c919",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432996,
+                27.163818
+            ],
+            "location_time": "2025-07-31T19:04:44.449882",
+            "photo_file_id": "AgACAgQAAxkBAAPSaIu-X_N96rb9pqgfNtU6bBEOoWYAAufHMRtkoWFQ8E_q13bdgZIBAAMCAAN5AAM2BA",
+            "photo_time": "2025-07-31T19:05:03.164804",
+            "description": null,
+            "crash_time_delta": 5,
+            "submitted_at": "2025-07-31T19:05:12.681631",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "10": {
+            "report_id": "8d0be8f4-697b-4f20-9f00-68cfcad7d79c",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432996,
+                27.163818
+            ],
+            "location_time": "2025-07-31T19:16:28.425785",
+            "photo_file_id": "AgACAgQAAxkBAAPlaIvBGGXUvtjPw3uxGmg_If7jzZIAAunHMRtkoWFQLh9zKtTjSFoBAAMCAAN5AAM2BA",
+            "photo_time": "2025-07-31T19:16:40.508592",
+            "description": null,
+            "crash_time_delta": 9,
+            "submitted_at": "2025-07-31T19:16:47.984138",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "11": {
+            "report_id": "a7ab3df7-f31b-4ee9-aae1-82ddf9d3c0fb",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432996,
+                27.163818
+            ],
+            "location_time": "2025-07-31T19:17:30.376216",
+            "photo_file_id": "AgACAgQAAxkBAAP2aIvBWBOOx0qV0PiMwmlj3hH5js0AAurHMRtkoWFQ-xoM50j9h94BAAMCAAN5AAM2BA",
+            "photo_time": "2025-07-31T19:17:44.301290",
+            "description": "Balance check",
+            "crash_time_delta": 6,
+            "submitted_at": "2025-07-31T19:17:57.308006",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
         }
     }
 }

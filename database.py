@@ -1,7 +1,11 @@
 # database.py
 import uuid
+import logging
 from datetime import datetime, timedelta
 from tinydb import TinyDB, Query
+
+# Enable logging
+logger = logging.getLogger(__name__)
 
 # Initialize the database
 db = TinyDB('kazabot_db.json', indent=4)
@@ -33,7 +37,7 @@ def save_report(user_id, report_data):
 
 def get_or_create_user(user_id, username):
     """
-    Retrieves a user profile or creates a new one if it doesn't exist.
+    Retrieves a user profile or creates a new one with an initial balance.
     """
     User = Query()
     user = users_table.get(User.telegram_user_id == user_id)
@@ -45,11 +49,27 @@ def get_or_create_user(user_id, username):
             'created_at': datetime.utcnow().isoformat(),
             'courier_company': None,
             'payment_method': None,
-            'report_count': 0
+            'report_count': 0,
+            'balance': 99  # NEW: Add initial balance of 99 Lira
         }
         users_table.insert(user_profile)
         return user_profile
     return user
+
+def update_user_balance(user_id, amount_to_add):
+    """
+    Increments a user's balance by a specified amount.
+    """
+    User = Query()
+    user = users_table.get(User.telegram_user_id == user_id)
+    if user:
+        # Handle cases where older users might not have a balance field
+        current_balance = user.get('balance', 0) 
+        new_balance = current_balance + amount_to_add
+        users_table.update({'balance': new_balance}, User.telegram_user_id == user_id)
+        logger.info(f"Updated balance for user {user_id}. New balance: {new_balance}")
+        return new_balance
+    return None
 
 def update_user_profile(user_id, data_to_update):
     """
