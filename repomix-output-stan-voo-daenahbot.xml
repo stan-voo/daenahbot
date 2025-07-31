@@ -1,0 +1,716 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+The content has been processed where security check has been disabled.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Security check has been disabled - content may contain sensitive information
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+bot.py
+config.py
+database.py
+handlers.py
+kazabot_db.json
+Procfile
+requirements.txt
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+cat > .gitignore << 'EOF'
+.env
+venv/
+__pycache__/
+*.pyc
+db.json
+.DS_Store
+EOF
+</file>
+
+<file path="bot.py">
+# bot.py
+
+import logging
+from telegram.ext import (
+    Application,
+    ConversationHandler,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters,
+)
+from config import TELEGRAM_BOT_TOKEN
+from handlers import (
+    start,
+    location,
+    photo,
+    description,
+    description_skip,
+    crash_time_delta,
+    submit,
+    company_name,
+    cancel,
+    review_handler,
+    LOCATION,
+    PHOTO,
+    DESCRIPTION,
+    CRASH_TIME_DELTA,
+    CONFIRMATION,
+    COMPANY_NAME,
+)
+
+# Enable logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+
+def main() -> None:
+    """Run the bot."""
+    # Create the Application and pass it your bot's token.
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+
+    # Add conversation handler with the states
+    conv_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler("start", start),
+            # NEW: Add an entry point for our button
+            MessageHandler(filters.Regex(r"^➕ New Report$"), start),
+        ],
+        states={
+            LOCATION: [MessageHandler(filters.LOCATION, location)],
+            PHOTO: [MessageHandler(filters.PHOTO, photo)],
+            DESCRIPTION: [
+                MessageHandler(filters.Regex(r"(?i)^skip$"), description_skip),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, description),
+            ],
+            CRASH_TIME_DELTA: [MessageHandler(filters.TEXT & ~filters.COMMAND, crash_time_delta)],
+            CONFIRMATION: [
+                MessageHandler(filters.Regex(r"(?i)^Submit Report$"), submit),
+                MessageHandler(filters.Regex(r"(?i)^Cancel$"), cancel),
+            ],
+            COMPANY_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, company_name)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+        per_message=False # Ensures conversation context is consistent
+    )
+
+    application.add_handler(conv_handler)
+    application.add_handler(CallbackQueryHandler(review_handler))
+
+    # Run the bot until the user presses Ctrl-C
+    logger.info("Starting bot...")
+    application.run_polling()
+    logger.info("Bot stopped.")
+
+
+if __name__ == "__main__":
+    main()
+</file>
+
+<file path="config.py">
+# config.py - Configuration management
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Bot configuration - Changed from TELEGRAM_TOKEN to TELEGRAM_BOT_TOKEN
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+if not TELEGRAM_BOT_TOKEN:
+    raise ValueError("No TELEGRAM_BOT_TOKEN found in environment variables")
+
+# Database configuration
+DATABASE_PATH = 'db.json'
+
+# Validation constraints
+MAX_DESCRIPTION_LENGTH = 200
+MIN_CRASH_TIME = 0  # minutes
+MAX_CRASH_TIME = 60  # minutes
+MAX_REPORTS_PER_DAY = 3
+
+# Conversation states
+LOCATION, PHOTO, DESCRIPTION, CRASH_TIME_DELTA, CONFIRMATION = range(5)
+
+# --- Load Admin User IDs from .env file ---
+admin_ids_str = os.getenv('ADMIN_IDS', '') # Get the comma-separated string
+
+# Process the string into a list of integers
+if admin_ids_str:
+    try:
+        # Split the string by commas and convert each part to an integer
+        ADMIN_IDS = [int(admin_id.strip()) for admin_id in admin_ids_str.split(',')]
+    except ValueError:
+        print("Error: ADMIN_IDS in .env file contains non-numeric values. Please check it.")
+        ADMIN_IDS = [] # Default to an empty list on error
+else:
+    # If the variable is not set, default to an empty list
+    ADMIN_IDS = []
+
+# It's good practice to log or print the loaded admins on startup to verify
+if not ADMIN_IDS:
+    print("Warning: No ADMIN_IDS found in .env file. Admin features will be disabled.")
+else:
+    print(f"Admin users loaded successfully: {ADMIN_IDS}")
+</file>
+
+<file path="database.py">
+# database.py
+import uuid
+from datetime import datetime, timedelta
+from tinydb import TinyDB, Query
+
+# Initialize the database
+db = TinyDB('kazabot_db.json', indent=4)
+reports_table = db.table('reports')
+users_table = db.table('users')
+
+def save_report(user_id, report_data):
+    """
+    Saves a new accident report to the database.
+    """
+    report_id = str(uuid.uuid4())
+    submitted_at = datetime.utcnow().isoformat()
+
+    report = {
+        'report_id': report_id,
+        'telegram_user_id': user_id,
+        'location_geo': report_data.get('location'),
+        'location_time': report_data.get('location_timestamp'),
+        'photo_file_id': report_data.get('photo'),
+        'photo_time': report_data.get('photo_timestamp'),
+        'description': report_data.get('description'),
+        'crash_time_delta': report_data.get('crash_time_delta'),
+        'submitted_at': submitted_at,
+        'status': 'pending', # pending/verified/duplicate/rewarded
+        'reward_sent': False
+    }
+    reports_table.insert(report)
+    return report_id
+
+def get_or_create_user(user_id, username):
+    """
+    Retrieves a user profile or creates a new one if it doesn't exist.
+    """
+    User = Query()
+    user = users_table.get(User.telegram_user_id == user_id)
+
+    if not user:
+        user_profile = {
+            'telegram_user_id': user_id,
+            'username': username,
+            'created_at': datetime.utcnow().isoformat(),
+            'courier_company': None,
+            'payment_method': None,
+            'report_count': 0
+        }
+        users_table.insert(user_profile)
+        return user_profile
+    return user
+
+def update_user_profile(user_id, data_to_update):
+    """
+    Updates a user's profile with new information (e.g., company, report count).
+    """
+    User = Query()
+    users_table.update(data_to_update, User.telegram_user_id == user_id)
+
+def get_user_report_count_today(user_id):
+    """
+    Counts how many reports a user has submitted in the last 24 hours.
+    """
+    Report = Query()
+    twenty_four_hours_ago = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    
+    user_reports = reports_table.search(
+        (Report.telegram_user_id == user_id) & 
+        (Report.submitted_at >= twenty_four_hours_ago)
+    )
+    return len(user_reports)
+    # database.py (add these functions)
+
+def get_report_by_id(report_id):
+    """Retrieves a single report by its unique ID."""
+    Report = Query()
+    report = reports_table.get(Report.report_id == report_id)
+    return report
+
+def update_report_status(report_id, new_status, admin_id):
+    """Updates the status of a report and logs which admin did it."""
+    Report = Query()
+    reports_table.update(
+        {'status': new_status, 'reviewed_by': admin_id}, 
+        Report.report_id == report_id
+    )
+</file>
+
+<file path="handlers.py">
+# handlers.py
+import logging
+from datetime import datetime
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import (
+    ContextTypes,
+    ConversationHandler,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters,
+)
+from database import save_report, get_or_create_user, update_user_profile, get_user_report_count_today
+from config import ADMIN_IDS 
+from database import ( 
+    save_report, 
+    get_or_create_user, 
+    update_user_profile,
+    get_report_by_id, 
+    update_report_status
+)
+
+# Enable logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+# Define states for the conversation
+(
+    LOCATION,
+    PHOTO,
+    DESCRIPTION,
+    CRASH_TIME_DELTA,
+    CONFIRMATION,
+    COMPANY_NAME,
+) = range(6)
+# --- NEW: Reusable keyboard for starting a new report ---
+NEW_REPORT_KEYBOARD = ReplyKeyboardMarkup([["➕ New Report"]], resize_keyboard=True, one_time_keyboard=False)
+
+# --- Start & Cancel ---
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Starts the conversation and asks for the accident location."""
+    user = update.message.from_user
+    logger.info("User %s started the conversation.", user.first_name)
+    
+    # Onboard the user if they are new
+    get_or_create_user(user.id, user.username)
+
+    # Check report limit
+    # Note: A more robust implementation would check this *before* starting.
+    # We place it here for simplicity in the conversation flow.
+    # report_count = get_user_report_count_today(user.id)
+    # if report_count >= 3:
+    #     await update.message.reply_text("You have reached your daily report limit (3). Please try again tomorrow.")
+    #     return ConversationHandler.END
+
+    location_keyboard = KeyboardButton(text="Share Accident Location", request_location=True)
+    custom_keyboard = [[location_keyboard]]
+    reply_markup = ReplyKeyboardMarkup(custom_keyboard, resize_keyboard=True, one_time_keyboard=True)
+
+    await update.message.reply_text(
+        "Welcome to KazaBot! Help us by reporting minor accidents and get rewarded.\n\n"
+        "Please press the button below to share the accident's location.",
+        reply_markup=reply_markup,
+    )
+    return LOCATION
+
+# --- Reporting Flow ---
+
+async def location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the location and asks for a photo."""
+    user_location = update.message.location
+    context.user_data['report'] = {
+        'location': (user_location.latitude, user_location.longitude),
+        'location_timestamp': datetime.utcnow().isoformat()
+    }
+    logger.info("Location from %s: %s", update.message.from_user.first_name, user_location)
+    
+    await update.message.reply_text(
+        "Great! Now, please take a clear photo of the accident and send it to me.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return PHOTO
+
+async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the photo and asks for a description."""
+    user_photo = update.message.photo[-1] # Get the highest resolution photo
+    context.user_data['report']['photo'] = user_photo.file_id
+    context.user_data['report']['photo_timestamp'] = datetime.utcnow().isoformat()
+    
+    logger.info("Photo received from %s", update.message.from_user.first_name)
+    
+    reply_keyboard = [["Skip"]]
+    await update.message.reply_text(
+        "Photo received. Now, please add a short description (e.g., 'two cars, rear-end'). "
+        "This is optional. You can also type 'Skip'.",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
+    )
+    return DESCRIPTION
+
+async def description(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the description and asks for the time delta."""
+    user_description = update.message.text
+    if user_description.lower() != 'skip':
+        if len(user_description) > 200:
+            await update.message.reply_text("The description is too long (max 200 characters). Please try again.")
+            return DESCRIPTION
+        context.user_data['report']['description'] = user_description
+    else:
+        context.user_data['report']['description'] = None
+        
+    logger.info("Description from %s: %s", update.message.from_user.first_name, user_description)
+    await update.message.reply_text(
+        "Got it. Roughly how many minutes ago did the crash happen? (Please enter a number from 0 to 60)",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return CRASH_TIME_DELTA
+
+async def description_skip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Skips the description and asks for the time delta."""
+    context.user_data['report']['description'] = None
+    logger.info("User %s skipped the description.", update.message.from_user.first_name)
+    await update.message.reply_text(
+        "Description skipped. Roughly how many minutes ago did the crash happen? (Please enter a number from 0 to 60)",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return CRASH_TIME_DELTA
+
+
+async def crash_time_delta(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the time delta and asks for final confirmation."""
+    text = update.message.text
+    try:
+        delta = int(text)
+        if not (0 <= delta <= 60):
+            raise ValueError
+        context.user_data['report']['crash_time_delta'] = delta
+    except (ValueError, TypeError):
+        await update.message.reply_text("That's not a valid number. Please enter a number between 0 and 60.")
+        return CRASH_TIME_DELTA
+
+    # Show summary
+    report = context.user_data['report']
+    summary = (
+        f"--- REVIEW YOUR REPORT ---\n"
+        f"📍 Location: Sent\n"
+        f"📸 Photo: Sent\n"
+        f"📝 Description: {report.get('description', 'N/A')}\n"
+        f"⏱️ Time Since Crash: ~{report.get('crash_time_delta')} minutes ago\n\n"
+        "Is everything correct?"
+    )
+    reply_keyboard = [["Submit Report", "Cancel"]]
+    await update.message.reply_text(
+        summary,
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True),
+    )
+    return CONFIRMATION
+
+async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Submits the report, saves it, and transitions to the final steps."""
+    user = update.message.from_user
+    report_data = context.user_data.get('report')
+    
+    if not report_data:
+        await update.message.reply_text("Something went wrong. Please start over with /start.")
+        return ConversationHandler.END
+
+    # Save the report
+    report_id = save_report(user.id, report_data)
+    logger.info("User %s submitted report %s", user.first_name, report_id)
+
+    # Update user's report count
+    user_profile = get_or_create_user(user.id, user.username)
+    new_count = user_profile.get('report_count', 0) + 1
+    update_user_profile(user.id, {'report_count': new_count})
+    
+    # Notify admins
+    await notify_admins(context, user, report_id, report_data)
+    
+    # Check if company name is needed
+    if user_profile.get('courier_company') is None:
+        await update.message.reply_text(
+            "✅ Success! Your report has been submitted.\n\n"
+            "To help us, could you tell us which courier company you work for? (e.g., 'Getir', 'Trendyol Go'). This is optional.",
+             reply_markup=ReplyKeyboardRemove(),
+        )
+        return COMPANY_NAME
+    else:
+        # If company name is known, end the conversation
+        return await finish(update, context)
+
+
+async def company_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Saves the user's courier company and ends the conversation."""
+    user_id = update.message.from_user.id
+    company = update.message.text
+    
+    update_user_profile(user_id, {'courier_company': company})
+    logger.info("User %s set their company to %s", update.message.from_user.first_name, company)
+    
+    await update.message.reply_text("Thank you! Your profile has been updated.")
+    
+    return await finish(update, context)
+
+
+async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Clears user data and shows the final message with the 'New Report' button."""
+    context.user_data.clear()
+    await update.message.reply_text(
+        "You can now submit a new report or close this chat.",
+        reply_markup=NEW_REPORT_KEYBOARD,
+    )
+    return ConversationHandler.END
+
+
+async def notify_admins(context: ContextTypes.DEFAULT_TYPE, user, report_id, report_data):
+    """Sends a notification to all admins about a new report."""
+    admin_message = (
+        f"🚨 New Accident Report Submitted 🚨\n\n"
+        f"Report ID: `{report_id}`\n"
+        f"Submitted By: @{user.username} (ID: `{user.id}`)\n"
+        f"Description: {report_data.get('description', 'N/A')}\n"
+        f"Time Delta: ~{report_data.get('crash_time_delta')} minutes ago"
+    )
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{report_id}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{report_id}"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    for admin_id in ADMIN_IDS:
+        try:
+            await context.bot.send_photo(chat_id=admin_id, photo=report_data['photo'])
+            await context.bot.send_message(
+                chat_id=admin_id,
+                text=admin_message,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+            logger.info(f"Sent notification for report {report_id} to admin {admin_id}")
+        except Exception as e:
+            logger.error(f"Failed to send notification to admin {admin_id}: {e}")
+
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Cancels the conversation and shows the 'New Report' button."""
+    user = update.message.from_user
+    logger.info("User %s canceled the conversation.", user.first_name)
+    context.user_data.clear()
+    await update.message.reply_text(
+        "Report canceled. You can start a new one anytime.",
+        reply_markup=NEW_REPORT_KEYBOARD, # Use our new keyboard
+    )
+    return ConversationHandler.END
+
+
+async def review_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles admin decisions from inline keyboard buttons."""
+    query = update.callback_query
+    await query.answer() # Acknowledge the button press
+
+    admin_user = query.from_user
+    action, report_id = query.data.split("_")
+
+    if admin_user.id not in ADMIN_IDS:
+        await query.edit_message_text(text="Sorry, you are not authorized to perform this action.")
+        return
+
+    report = get_report_by_id(report_id)
+    if not report:
+        await query.edit_message_text(text=f"Error: Report {report_id} not found.")
+        return
+    
+    if report['status'] != 'pending':
+        await query.edit_message_text(text=f"This report has already been reviewed. Status: {report['status']}.")
+        return
+
+    # Update status and notify the user
+    new_status = "verified" if action == "approve" else "rejected"
+    update_report_status(report_id, new_status, admin_user.id)
+    
+    # Update the admin's message to show the result
+    final_text = query.message.text + f"\n\n--- Decision ---\nStatus set to *{new_status.upper()}* by @{admin_user.username}."
+    await query.edit_message_text(text=final_text, parse_mode='Markdown')
+
+    # Notify the original user
+    original_user_id = report['telegram_user_id']
+    user_notification = f"UPDATE: Your report (ID: {report_id}) has been *{new_status}*."
+    
+    if new_status == 'verified':
+        user_notification += "\n\nCongratulations! You may be eligible for a reward. We will be in touch about payouts soon."
+        # Here you would trigger the payout logic in the future
+    
+    try:
+        await context.bot.send_message(
+            chat_id=original_user_id,
+            text=user_notification,
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        logger.error(f"Failed to send status update to user {original_user_id}: {e}")
+</file>
+
+<file path="kazabot_db.json">
+{
+    "users": {
+        "1": {
+            "telegram_user_id": 4462330,
+            "username": "mrvooooo",
+            "created_at": "2025-07-30T18:05:09.870369",
+            "courier_company": "Getir",
+            "payment_method": null,
+            "report_count": 1
+        },
+        "2": {
+            "telegram_user_id": 7127606451,
+            "username": "rewd0glamd",
+            "created_at": "2025-07-30T19:24:09.028355",
+            "courier_company": "Getir",
+            "payment_method": null,
+            "report_count": 4
+        }
+    },
+    "reports": {
+        "1": {
+            "report_id": "2d156c1b-68eb-49cb-af1b-00f27707b32d",
+            "telegram_user_id": 4462330,
+            "location_geo": [
+                38.432951,
+                27.162072
+            ],
+            "location_time": "2025-07-30T18:05:31.830144",
+            "photo_file_id": "AgACAgIAAxkBAAMFaIpe_EWfcVoX0NSX0mgIQAZB-t0AAqv3MRvjwlFIKRrfjwEHeEIBAAMCAAN5AAM2BA",
+            "photo_time": "2025-07-30T18:05:48.250580",
+            "description": "masterful coding",
+            "crash_time_delta": 0,
+            "submitted_at": "2025-07-30T18:06:15.584885",
+            "status": "pending",
+            "reward_sent": false
+        },
+        "2": {
+            "report_id": "25405c14-5629-40cf-a3ac-69dd234f499b",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432996,
+                27.163818
+            ],
+            "location_time": "2025-07-30T19:24:25.945855",
+            "photo_file_id": "AgACAgQAAxkBAAMUaIpxf_Nkuum2freWHeVOEQbhdagAAs_LMRtkoVlQR0RDdOuUEjYBAAMCAAN5AAM2BA",
+            "photo_time": "2025-07-30T19:24:47.503329",
+            "description": null,
+            "crash_time_delta": 5,
+            "submitted_at": "2025-07-30T19:25:02.912718",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "3": {
+            "report_id": "e436d6c3-679f-4e35-a3e6-b9a07f362818",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432996,
+                27.163818
+            ],
+            "location_time": "2025-07-30T19:41:32.081860",
+            "photo_file_id": "AgACAgQAAxkBAAMmaIp1eebMWgl_HAN88HD6dyowyPQAAtXLMRtkoVlQZxNh-hoxm-gBAAMCAAN5AAM2BA",
+            "photo_time": "2025-07-30T19:41:45.601875",
+            "description": "Test3: button add",
+            "crash_time_delta": 0,
+            "submitted_at": "2025-07-30T19:42:04.169922",
+            "status": "rejected",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "4": {
+            "report_id": "1fa7e2e7-1ae0-4c94-9fa6-7c6c4eb100fc",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432996,
+                27.163818
+            ],
+            "location_time": "2025-07-30T19:42:27.204362",
+            "photo_file_id": "AgACAgQAAxkBAAM0aIp1vnXSYeWzKOGGtQdTR0cerAgAAtfLMRtkoVlQVAPjHxaAMeYBAAMCAAN5AAM2BA",
+            "photo_time": "2025-07-30T19:42:54.313088",
+            "description": null,
+            "crash_time_delta": 9,
+            "submitted_at": "2025-07-30T19:43:15.203505",
+            "status": "rejected",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "5": {
+            "report_id": "7faf682c-b7d4-4ff3-89ae-58531ab819b8",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432996,
+                27.163818
+            ],
+            "location_time": "2025-07-30T19:51:19.351171",
+            "photo_file_id": "AgACAgQAAxkBAAMUaIpxf_Nkuum2freWHeVOEQbhdagAAs_LMRtkoVlQR0RDdOuUEjYBAAMCAAN5AAM2BA",
+            "photo_time": "2025-07-30T19:51:27.247422",
+            "description": "Hello",
+            "crash_time_delta": 0,
+            "submitted_at": "2025-07-30T19:51:39.011673",
+            "status": "pending",
+            "reward_sent": false
+        }
+    }
+}
+</file>
+
+<file path="Procfile">
+worker: python bot.py
+</file>
+
+<file path="requirements.txt">
+python-telegram-bot==21.3
+tinydb==4.8.0
+python-dotenv==1.0.0
+pydantic==2.5.0
+</file>
+
+</files>

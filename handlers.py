@@ -219,8 +219,8 @@ async def notify_admins(context: ContextTypes.DEFAULT_TYPE, user, report_id, rep
     """Sends a notification to all admins about a new report."""
     admin_message = (
         f"🚨 New Accident Report Submitted 🚨\n\n"
-        f"Report ID: `{report_id}`\n"
-        f"Submitted By: @{user.username} (ID: `{user.id}`)\n"
+        f"Report ID: {report_id}\n"
+        f"Submitted By: @{user.username} (ID: {user.id})\n"
         f"Description: {report_data.get('description', 'N/A')}\n"
         f"Time Delta: ~{report_data.get('crash_time_delta')} minutes ago"
     )
@@ -239,8 +239,7 @@ async def notify_admins(context: ContextTypes.DEFAULT_TYPE, user, report_id, rep
             await context.bot.send_message(
                 chat_id=admin_id,
                 text=admin_message,
-                reply_markup=reply_markup,
-                parse_mode='Markdown'
+                reply_markup=reply_markup
             )
             logger.info(f"Sent notification for report {report_id} to admin {admin_id}")
         except Exception as e:
@@ -285,12 +284,12 @@ async def review_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     update_report_status(report_id, new_status, admin_user.id)
     
     # Update the admin's message to show the result
-    final_text = query.message.text + f"\n\n--- Decision ---\nStatus set to *{new_status.upper()}* by @{admin_user.username}."
-    await query.edit_message_text(text=final_text, parse_mode='Markdown')
+    final_text = query.message.text + f"\n\n--- Decision ---\nStatus set to {new_status.upper()} by @{admin_user.username}."
+    await query.edit_message_text(text=final_text)
 
     # Notify the original user
     original_user_id = report['telegram_user_id']
-    user_notification = f"UPDATE: Your report (ID: {report_id}) has been *{new_status}*."
+    user_notification = f"UPDATE: Your report (ID: {report_id}) has been {new_status}."
     
     if new_status == 'verified':
         user_notification += "\n\nCongratulations! You may be eligible for a reward. We will be in touch about payouts soon."
@@ -299,8 +298,7 @@ async def review_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         await context.bot.send_message(
             chat_id=original_user_id,
-            text=user_notification,
-            parse_mode='Markdown'
+            text=user_notification
         )
     except Exception as e:
         logger.error(f"Failed to send status update to user {original_user_id}: {e}")
