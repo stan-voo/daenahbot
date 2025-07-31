@@ -55,26 +55,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "You can withdraw your earnings once your total balance reaches 500 ₺.\n\n"
         "Let's get started! Please share the accident's location by pressing the button below."
     )
-    await context.bot.send_photo(
-        chat_id=update.effective_chat.id,
-        photo=photo_file_id,
-        caption=welcome_caption,
-        read_timeout=20,
-        write_timeout=20
-    )
-    # --- End of new section ---
-    
-    # Onboard the user if they are new and set initial balance
     get_or_create_user(user.id, user.username)
 
     location_keyboard = KeyboardButton(text="Share Accident Location", request_location=True)
     custom_keyboard = [[location_keyboard]]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard, resize_keyboard=True, one_time_keyboard=True)
 
-    await update.message.reply_text(
-        "Please press the button below to share the accident's location.",
+    await context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=photo_file_id,
+        caption=welcome_caption,
         reply_markup=reply_markup,
+        read_timeout=20,
+        write_timeout=20
     )
+    # --- End of new section ---
+    
+    # Onboard the user if they are new and set initial balance
+    
+
     return LOCATION
 
 # --- Reporting Flow ---
