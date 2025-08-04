@@ -40,17 +40,16 @@ logger = logging.getLogger(__name__)
 # --- Reusable keyboard for main actions ---
 NEW_REPORT_KEYBOARD = ReplyKeyboardMarkup(
     [
-        ["➕ New Report"],  # Top row for the primary action
-        ["💰 Bakiye", "📜 Kurallar"] # Second row for info buttons
+        ["➕ New Report"],
+        ["💰 Bakiye", "📜 Kurallar", "📞 Destek"] # <-- ADDED "Destek"
     ],
-    resize_keyboard=True,
-    one_time_keyboard=False
+    resize_keyboard=True
 )
 
 # --- NEW: Define the rules text ---
 RULES_TEXT = (
     "📜 **KazaBot Kuralları**\n\n"
-    f" rewarding verified reports with **{REWARD_AMOUNT} ₺**.\n"
+    f" We are rewarding verified reports with **{REWARD_AMOUNT} ₺**.\n"
     f" The payout threshold is **{PAYOUT_THRESHOLD} ₺**.\n"
     f" We are currently only servicing **{SERVICE_ZONES_TEXT}**.\n\n"
     "Please only report accidents within the specified service zones. Thank you for your cooperation!"
@@ -421,4 +420,22 @@ async def kurallar_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         text=RULES_TEXT,
         reply_markup=NEW_REPORT_KEYBOARD, # Keep the main keyboard visible
         parse_mode='Markdown' # Use Markdown to make it look nicer
+    )
+
+# --- NEW: USER SUPPORT COMMAND ---
+async def destek_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Provides the user with a direct link to the support chat."""
+    support_username = "DaenahSupport"  # <-- Your actual support account username
+    support_message = (
+        "Yardıma mı ihtiyacınız var?\n\n"
+        "Tüm sorularınız, sorunlarınız veya geri bildirimleriniz için destek ekibimizle doğrudan iletişime geçebilirsiniz. "
+        f"Lütfen aşağıdaki linke tıklayın:\n\n"
+        f"➡️ **[Destek Sohbetini Başlat](https://t.me/mrvooooo)**\n\n"
+        "Ekibimiz en kısa sürede size yardımcı olacaktır."
+    )
+    await update.message.reply_text(
+        text=support_message,
+        reply_markup=NEW_REPORT_KEYBOARD,
+        parse_mode='Markdown',
+        disable_web_page_preview=True # Keeps the message clean
     )

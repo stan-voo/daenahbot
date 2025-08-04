@@ -22,7 +22,8 @@ from handlers import (
     review_handler,
     odeme_command,
     bakiye_command,
-    kurallar_command, # <-- ADD THIS IMPORT
+    kurallar_command,
+    destek_command, # <-- ADD THIS IMPORT
     LOCATION,
     PHOTO,
     DESCRIPTION,
@@ -79,11 +80,13 @@ def main() -> None:
     # --- Register command handlers ---
     application.add_handler(CommandHandler("odeme", odeme_command))
     application.add_handler(CommandHandler("bakiye", bakiye_command))
-    application.add_handler(CommandHandler("kurallar", kurallar_command)) # <-- ADD THIS
+    application.add_handler(CommandHandler("kurallar", kurallar_command))
+    application.add_handler(CommandHandler("destek", destek_command)) # <-- ADD THIS
 
     # --- Register text button handlers ---
     application.add_handler(MessageHandler(filters.Regex(r"^💰 Bakiye$"), bakiye_command))
-    application.add_handler(MessageHandler(filters.Regex(r"^📜 Kurallar$"), kurallar_command)) # <-- ADD THIS
+    application.add_handler(MessageHandler(filters.Regex(r"^📜 Kurallar$"), kurallar_command))
+    application.add_handler(MessageHandler(filters.Regex(r"^📞 Destek$"), destek_command)) # <-- ADD THIS
 
 
     logger.info("Starting KazaBot...")
