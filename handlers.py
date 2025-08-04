@@ -20,7 +20,7 @@ from database import (
     update_user_balance,
     get_user_by_id
 )
-from config import ADMIN_IDS, PAYOUT_THRESHOLD
+from config import ADMIN_IDS, PAYOUT_THRESHOLD, REWARD_AMOUNT, SERVICE_ZONES_TEXT
 
 # Enable logging
 logging.basicConfig(
@@ -39,9 +39,21 @@ logger = logging.getLogger(__name__)
 ) = range(6)
 # --- Reusable keyboard for main actions ---
 NEW_REPORT_KEYBOARD = ReplyKeyboardMarkup(
-    [["➕ New Report", "💰 Bakiye"]],
+    [
+        ["➕ New Report"],  # Top row for the primary action
+        ["💰 Bakiye", "📜 Kurallar"] # Second row for info buttons
+    ],
     resize_keyboard=True,
     one_time_keyboard=False
+)
+
+# --- NEW: Define the rules text ---
+RULES_TEXT = (
+    "📜 **KazaBot Kuralları**\n\n"
+    f" rewarding verified reports with **{REWARD_AMOUNT} ₺**.\n"
+    f" The payout threshold is **{PAYOUT_THRESHOLD} ₺**.\n"
+    f" We are currently only servicing **{SERVICE_ZONES_TEXT}**.\n\n"
+    "Please only report accidents within the specified service zones. Thank you for your cooperation!"
 )
 
 # --- Start & Cancel ---
@@ -400,4 +412,13 @@ async def bakiye_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"💰 Mevcut Bakiyeniz: {balance} ₺\n\n"
         f"Ödeme talebinde bulunabilmek için ulaşmanız gereken bakiye: {PAYOUT_THRESHOLD} ₺.",
         reply_markup=NEW_REPORT_KEYBOARD
+    )
+
+# --- NEW: USER RULES COMMAND ---
+async def kurallar_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Sends the user the predefined list of rules."""
+    await update.message.reply_text(
+        text=RULES_TEXT,
+        reply_markup=NEW_REPORT_KEYBOARD, # Keep the main keyboard visible
+        parse_mode='Markdown' # Use Markdown to make it look nicer
     )

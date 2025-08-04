@@ -21,7 +21,8 @@ from handlers import (
     cancel,
     review_handler,
     odeme_command,
-    bakiye_command, # <-- ADD THIS IMPORT
+    bakiye_command,
+    kurallar_command, # <-- ADD THIS IMPORT
     LOCATION,
     PHOTO,
     DESCRIPTION,
@@ -74,12 +75,16 @@ def main() -> None:
 
     application.add_handler(conv_handler)
     application.add_handler(CallbackQueryHandler(review_handler))
-    application.add_handler(CommandHandler("odeme", odeme_command))
 
-    # --- ADD BALANCE COMMAND HANDLERS ---
+    # --- Register command handlers ---
+    application.add_handler(CommandHandler("odeme", odeme_command))
     application.add_handler(CommandHandler("bakiye", bakiye_command))
+    application.add_handler(CommandHandler("kurallar", kurallar_command)) # <-- ADD THIS
+
+    # --- Register text button handlers ---
     application.add_handler(MessageHandler(filters.Regex(r"^💰 Bakiye$"), bakiye_command))
-    # --- END OF NEW CODE ---
+    application.add_handler(MessageHandler(filters.Regex(r"^📜 Kurallar$"), kurallar_command)) # <-- ADD THIS
+
 
     logger.info("Starting KazaBot...")
     

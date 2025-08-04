@@ -26,6 +26,10 @@ MAX_CRASH_TIME = 60  # minutes
 MAX_REPORTS_PER_DAY = 3
 PAYOUT_THRESHOLD = 500  # TL
 
+# --- Add these new constants for the rules ---
+REWARD_AMOUNT = 100 # TL
+SERVICE_ZONES_TEXT = "İzmir — Buca ve Gaziemir ilçeleri"
+
 # Conversation states
 LOCATION, PHOTO, DESCRIPTION, CRASH_TIME_DELTA, CONFIRMATION = range(5)
 
