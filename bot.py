@@ -36,10 +36,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 async def setup_bot():
-    """Setup bot with proper error handling and webhook clearing."""
+    """Setup bot with proper timeout configuration."""
     try:
-        # Create application
-        application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+        # Create application with proper timeout settings
+        application = (
+            Application.builder()
+            .token(TELEGRAM_BOT_TOKEN)
+            .get_updates_read_timeout(30)      # Fix for deprecation warning
+            .get_updates_write_timeout(30)     # Fix for deprecation warning
+            .get_updates_connect_timeout(30)   # Fix for deprecation warning
+            .build()
+        )
         
         # Ensure no webhooks are set (force polling mode)
         await application.bot.delete_webhook(drop_pending_updates=True)
@@ -52,12 +59,12 @@ async def setup_bot():
         raise
 
 def main() -> None:
-    """Run the bot with enhanced error handling."""
+    """Run the bot with proper timeout handling."""
     try:
-        # Create the Application
+        # Create the Application with proper timeouts
         application = asyncio.get_event_loop().run_until_complete(setup_bot())
 
-        # Add conversation handler
+        # Add your conversation handler (same as before)
         conv_handler = ConversationHandler(
             entry_points=[
                 CommandHandler("start", start),
@@ -83,24 +90,15 @@ def main() -> None:
         application.add_handler(conv_handler)
         application.add_handler(CallbackQueryHandler(review_handler))
 
-        # Enhanced startup with retry logic
         logger.info("Starting bot with enhanced error handling...")
         
-        # Use run_polling with specific parameters to handle conflicts better
+        # Simplified run_polling (no deprecated timeout parameters)
         application.run_polling(
-            poll_interval=2.0,  # Slightly longer polling interval
-            timeout=20,         # Longer timeout for stability
-            bootstrap_retries=3, # Retry failed startups
-            read_timeout=30,    # Longer read timeout
-            write_timeout=30,   # Longer write timeout
-            connect_timeout=30, # Longer connection timeout
-            drop_pending_updates=True  # Clear any pending updates on startup
+            poll_interval=2.0,
+            bootstrap_retries=3,
+            drop_pending_updates=True
         )
         
-    except Conflict as e:
-        logger.error(f"Bot conflict detected: {e}")
-        logger.error("This usually means another instance is running. Check Railway deployments.")
-        raise
     except Exception as e:
         logger.error(f"Bot startup failed: {e}")
         raise
