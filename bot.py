@@ -65,7 +65,7 @@ def main() -> None:
                 MessageHandler(filters.Regex(r"(?i)^Submit Report$"), submit),
                 MessageHandler(filters.Regex(r"(?i)^Cancel$"), cancel),
             ],
-        ],
+        },
         fallbacks=[CommandHandler("cancel", cancel)],
         per_message=False
     )
