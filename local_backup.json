@@ -6,8 +6,8 @@
             "created_at": "2025-08-04T19:42:00.551113",
             "courier_company": null,
             "payment_method": null,
-            "report_count": 3,
-            "balance": 0
+            "report_count": 6,
+            "balance": 300
         }
     },
     "reports": {
@@ -58,6 +58,57 @@
             "description": "Odeme command 1",
             "crash_time_delta": 1,
             "submitted_at": "2025-08-04T20:54:13.792970",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "4": {
+            "report_id": "0b81a7fb-e4d3-4237-904e-b759013e5563",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.433063,
+                27.164084
+            ],
+            "location_time": "2025-08-04T21:19:33.028155",
+            "photo_file_id": "AgACAgQAAxkBAAIBmmiRHeVLCZoOqgoeCKEpzdG8fwNAAAKkyzEb1daIUEHZo4Lh2opdAQADAgADeQADNgQ",
+            "photo_time": "2025-08-04T21:19:37.340031",
+            "description": "Balance check test",
+            "crash_time_delta": 1,
+            "submitted_at": "2025-08-04T21:19:53.543521",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "5": {
+            "report_id": "ab40c22e-5891-45ff-b567-dfa883248db4",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.433063,
+                27.164084
+            ],
+            "location_time": "2025-08-04T21:52:17.653485",
+            "photo_file_id": "AgACAgQAAxkBAAIBymiRK6SVJ26WR-qrps9sGOKguEe5AAKvyzEb1daIUDqSEEJeBSkLAQADAgADeQADNgQ",
+            "photo_time": "2025-08-04T21:52:36.275527",
+            "description": "Rules command test",
+            "crash_time_delta": 1,
+            "submitted_at": "2025-08-04T21:52:49.480518",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "6": {
+            "report_id": "b34e26db-2cbc-4043-aff6-51120d2686ff",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.433173,
+                27.163997
+            ],
+            "location_time": "2025-08-04T22:02:04.271134",
+            "photo_file_id": "AgACAgQAAxkBAAIB4miRLejf4DQPw5tdVnKF0vUcX5bnAAKxyzEb1daIUDCf5mGr9DNwAQADAgADeQADNgQ",
+            "photo_time": "2025-08-04T22:02:16.241575",
+            "description": "Support button",
+            "crash_time_delta": 1,
+            "submitted_at": "2025-08-04T22:02:28.126975",
             "status": "verified",
             "reward_sent": false,
             "reviewed_by": 4462330

@@ -246,14 +246,23 @@ async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def notify_admins(context: ContextTypes.DEFAULT_TYPE, user, report_id, report_data):
-    """Sends a notification to all admins about a new report."""
+    """Sends a notification with a map link to all admins about a new report."""
+    
+    # --- NEW: Generate Google Maps link ---
+    lat, lon = report_data['location']
+    maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+    # --- End of new section ---
+
+    # --- MODIFIED: Updated message text ---
     admin_message = (
         f"🚨 New Accident Report Submitted 🚨\n\n"
+        f"📍 Location (Google Maps):\n{maps_link}\n\n" # The link is on its own line for better readability
         f"Report ID: {report_id}\n"
         f"Submitted By: @{user.username} (ID: {user.id})\n"
         f"Description: {report_data.get('description', 'N/A')}\n"
         f"Time Delta: ~{report_data.get('crash_time_delta')} minutes ago"
     )
+    # --- End of modification ---
     
     keyboard = [
         [
@@ -265,13 +274,18 @@ async def notify_admins(context: ContextTypes.DEFAULT_TYPE, user, report_id, rep
 
     for admin_id in ADMIN_IDS:
         try:
+            # First, send the photo as before
             await context.bot.send_photo(chat_id=admin_id, photo=report_data['photo'])
+            
+            # Then, send the updated message with the map link
             await context.bot.send_message(
                 chat_id=admin_id,
                 text=admin_message,
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
+                # No parse_mode needed, Telegram makes links clickable automatically
+                disable_web_page_preview=True # Optional: keeps the message compact
             )
-            logger.info(f"Sent notification for report {report_id} to admin {admin_id}")
+            logger.info(f"Sent notification with map link for report {report_id} to admin {admin_id}")
         except Exception as e:
             logger.error(f"Failed to send notification to admin {admin_id}: {e}")
 
