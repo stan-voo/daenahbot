@@ -1,6 +1,6 @@
-# bot.py
-
+# bot.py - Enhanced version
 import logging
+import asyncio
 from telegram.ext import (
     Application,
     ConversationHandler,
@@ -9,6 +9,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     filters,
 )
+from telegram.error import Conflict, NetworkError
 from config import TELEGRAM_BOT_TOKEN
 from handlers import (
     start,
@@ -18,7 +19,6 @@ from handlers import (
     description_skip,
     crash_time_delta,
     submit,
-        # company_name, # Comment out
     cancel,
     review_handler,
     LOCATION,
@@ -26,54 +26,86 @@ from handlers import (
     DESCRIPTION,
     CRASH_TIME_DELTA,
     CONFIRMATION,
-        # COMPANY_NAME, # Comment out
 )
 
-# Enable logging
+# Enhanced logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", 
+    level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
+async def setup_bot():
+    """Setup bot with proper error handling and webhook clearing."""
+    try:
+        # Create application
+        application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+        
+        # Ensure no webhooks are set (force polling mode)
+        await application.bot.delete_webhook(drop_pending_updates=True)
+        logger.info("Cleared any existing webhooks")
+        
+        return application
+        
+    except Exception as e:
+        logger.error(f"Failed to setup bot: {e}")
+        raise
 
 def main() -> None:
-    """Run the bot."""
-    # Create the Application and pass it your bot's token.
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    """Run the bot with enhanced error handling."""
+    try:
+        # Create the Application
+        application = asyncio.get_event_loop().run_until_complete(setup_bot())
 
-    # Add conversation handler with the states
-    conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler("start", start),
-            # NEW: Add an entry point for our button
-            MessageHandler(filters.Regex(r"^➕ New Report$"), start),
-        ],
-        states={
-            LOCATION: [MessageHandler(filters.LOCATION, location)],
-            PHOTO: [MessageHandler(filters.PHOTO, photo)],
-            DESCRIPTION: [
-                MessageHandler(filters.Regex(r"(?i)^skip$"), description_skip),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, description),
+        # Add conversation handler
+        conv_handler = ConversationHandler(
+            entry_points=[
+                CommandHandler("start", start),
+                MessageHandler(filters.Regex(r"^➕ New Report$"), start),
             ],
-            CRASH_TIME_DELTA: [MessageHandler(filters.TEXT & ~filters.COMMAND, crash_time_delta)],
-            CONFIRMATION: [
-                MessageHandler(filters.Regex(r"(?i)^Submit Report$"), submit),
-                MessageHandler(filters.Regex(r"(?i)^Cancel$"), cancel),
-            ],
-            # COMPANY_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, company_name)], # Comment out this line
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-        per_message=False # Ensures conversation context is consistent
-    )
+            states={
+                LOCATION: [MessageHandler(filters.LOCATION, location)],
+                PHOTO: [MessageHandler(filters.PHOTO, photo)],
+                DESCRIPTION: [
+                    MessageHandler(filters.Regex(r"(?i)^skip$"), description_skip),
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, description),
+                ],
+                CRASH_TIME_DELTA: [MessageHandler(filters.TEXT & ~filters.COMMAND, crash_time_delta)],
+                CONFIRMATION: [
+                    MessageHandler(filters.Regex(r"(?i)^Submit Report$"), submit),
+                    MessageHandler(filters.Regex(r"(?i)^Cancel$"), cancel),
+                ],
+            },
+            fallbacks=[CommandHandler("cancel", cancel)],
+            per_message=False
+        )
 
-    application.add_handler(conv_handler)
-    application.add_handler(CallbackQueryHandler(review_handler))
+        application.add_handler(conv_handler)
+        application.add_handler(CallbackQueryHandler(review_handler))
 
-    # Run the bot until the user presses Ctrl-C
-    logger.info("Starting bot...")
-    application.run_polling()
-    logger.info("Bot stopped.")
-
+        # Enhanced startup with retry logic
+        logger.info("Starting bot with enhanced error handling...")
+        
+        # Use run_polling with specific parameters to handle conflicts better
+        application.run_polling(
+            poll_interval=2.0,  # Slightly longer polling interval
+            timeout=20,         # Longer timeout for stability
+            bootstrap_retries=3, # Retry failed startups
+            read_timeout=30,    # Longer read timeout
+            write_timeout=30,   # Longer write timeout
+            connect_timeout=30, # Longer connection timeout
+            drop_pending_updates=True  # Clear any pending updates on startup
+        )
+        
+    except Conflict as e:
+        logger.error(f"Bot conflict detected: {e}")
+        logger.error("This usually means another instance is running. Check Railway deployments.")
+        raise
+    except Exception as e:
+        logger.error(f"Bot startup failed: {e}")
+        raise
+    finally:
+        logger.info("Bot stopped.")
 
 if __name__ == "__main__":
     main()

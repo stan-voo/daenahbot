@@ -14,8 +14,8 @@
             "created_at": "2025-07-30T19:24:09.028355",
             "courier_company": "Getir",
             "payment_method": null,
-            "report_count": 10,
-            "balance": 200
+            "report_count": 11,
+            "balance": 300
         }
     },
     "reports": {
@@ -198,6 +198,23 @@
             "description": "Balance check",
             "crash_time_delta": 6,
             "submitted_at": "2025-07-31T19:17:57.308006",
+            "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "12": {
+            "report_id": "fe95bb76-b908-476d-919a-30a97742dbe3",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.433063,
+                27.164084
+            ],
+            "location_time": "2025-08-04T18:51:09.113514",
+            "photo_file_id": "AgACAgQAAxkBAAIBO2iRASxIb96ZzY-Wu-IxPGFi1vuXAAJEyzEb1daIUHuIEb9Ro-N4AQADAgADeQADNgQ",
+            "photo_time": "2025-08-04T18:51:24.285511",
+            "description": null,
+            "crash_time_delta": 9,
+            "submitted_at": "2025-08-04T18:51:32.320416",
             "status": "verified",
             "reward_sent": false,
             "reviewed_by": 4462330
