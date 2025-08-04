@@ -20,7 +20,7 @@ from database import (
     update_user_balance,
     get_user_by_id
 )
-from config import ADMIN_IDS
+from config import ADMIN_IDS, PAYOUT_THRESHOLD
 
 # Enable logging
 logging.basicConfig(
@@ -37,8 +37,12 @@ logger = logging.getLogger(__name__)
     CONFIRMATION,
     COMPANY_NAME,
 ) = range(6)
-# --- NEW: Reusable keyboard for starting a new report ---
-NEW_REPORT_KEYBOARD = ReplyKeyboardMarkup([["➕ New Report"]], resize_keyboard=True, one_time_keyboard=False)
+# --- Reusable keyboard for main actions ---
+NEW_REPORT_KEYBOARD = ReplyKeyboardMarkup(
+    [["➕ New Report", "💰 Bakiye"]],
+    resize_keyboard=True,
+    one_time_keyboard=False
+)
 
 # --- Start & Cancel ---
 
@@ -382,3 +386,18 @@ async def odeme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     except (IndexError, ValueError):
         await update.message.reply_text("Usage: /odeme <user_id> <amount>")
+
+# --- NEW: USER BALANCE COMMAND ---
+async def bakiye_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Shows the user their current balance and the payout threshold."""
+    user_id = update.message.from_user.id
+    # get_or_create_user handles new and existing users perfectly here
+    user = get_or_create_user(user_id, update.message.from_user.username)
+    balance = user.get('balance', 0)
+
+    # Use the keyboard we defined earlier for a consistent experience
+    await update.message.reply_text(
+        f"💰 Mevcut Bakiyeniz: {balance} ₺\n\n"
+        f"Ödeme talebinde bulunabilmek için ulaşmanız gereken bakiye: {PAYOUT_THRESHOLD} ₺.",
+        reply_markup=NEW_REPORT_KEYBOARD
+    )
