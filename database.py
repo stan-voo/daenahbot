@@ -106,3 +106,11 @@ def update_report_status(report_id, new_status, admin_id):
         {'status': new_status, 'reviewed_by': admin_id}, 
         Report.report_id == report_id
     )
+
+def get_user_by_id(user_id):
+    """
+    Retrieves a user profile by their Telegram user ID.
+    """
+    User = Query()
+    user = users_table.get(User.telegram_user_id == user_id)
+    return user

@@ -10,16 +10,17 @@ from telegram.ext import (
     CallbackQueryHandler,
     filters,
 )
-from database import save_report, get_or_create_user, update_user_profile, get_user_report_count_today
-from config import ADMIN_IDS 
 from database import ( 
     save_report, 
     get_or_create_user, 
     update_user_profile,
+    get_user_report_count_today,
     get_report_by_id, 
     update_report_status,
-    update_user_balance # <-- ADD THIS
+    update_user_balance,
+    get_user_by_id
 )
+from config import ADMIN_IDS
 
 # Enable logging
 logging.basicConfig(
@@ -322,3 +323,62 @@ async def review_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
     except Exception as e:
         logger.error(f"Failed to send status update to user {original_user_id}: {e}")
+
+
+# --- ADMIN PAYOUT COMMAND ---
+async def odeme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Admin-only command to process a payout: /odeme <user_id> <amount>"""
+    admin_user_id = update.message.from_user.id
+    if admin_user_id not in ADMIN_IDS:
+        await update.message.reply_text("This command is for admins only.")
+        logger.warning(f"Unauthorized /odeme attempt by user {admin_user_id}.")
+        return
+
+    try:
+        args = context.args
+        if len(args) != 2:
+            raise ValueError("Incorrect number of arguments.")
+
+        target_user_id = int(args[0])
+        amount = int(args[1])
+
+        if amount <= 0:
+            await update.message.reply_text("Payout amount must be a positive number.")
+            return
+
+        user = get_user_by_id(target_user_id)
+        if not user:
+            await update.message.reply_text(f"User with ID {target_user_id} not found.")
+            return
+
+        current_balance = user.get('balance', 0)
+        if current_balance < amount:
+            await update.message.reply_text(
+                f"Insufficient balance for user {target_user_id}.\n"
+                f"Current Balance: {current_balance} ₺\n"
+                f"Payout Amount: {amount} ₺"
+            )
+            return
+
+        # Subtract from balance by providing a negative amount
+        new_balance = update_user_balance(target_user_id, -amount)
+
+        # Confirmation message to the admin
+        await update.message.reply_text(
+            f"✅ Payout of {amount} ₺ for user {target_user_id} has been recorded.\n"
+            f"Their new balance is now {new_balance} ₺."
+        )
+        logger.info(f"Admin {admin_user_id} processed a payout of {amount} ₺ for user {target_user_id}.")
+
+        # Notification message to the user
+        try:
+            await context.bot.send_message(
+                chat_id=target_user_id,
+                text=f"A payout of {amount} ₺ has been processed by our team! Your new balance is {new_balance} ₺."
+            )
+        except Exception as e:
+            logger.error(f"Failed to send payout notification to user {target_user_id}: {e}")
+            await update.message.reply_text(f"⚠️ Could not send notification to user {target_user_id}.")
+
+    except (IndexError, ValueError):
+        await update.message.reply_text("Usage: /odeme <user_id> <amount>")

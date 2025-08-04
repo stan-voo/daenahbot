@@ -20,6 +20,7 @@ from handlers import (
     submit,
     cancel,
     review_handler,
+    odeme_command,
     LOCATION,
     PHOTO,
     DESCRIPTION,
@@ -72,6 +73,7 @@ def main() -> None:
 
     application.add_handler(conv_handler)
     application.add_handler(CallbackQueryHandler(review_handler))
+    application.add_handler(CommandHandler("odeme", odeme_command))
 
     logger.info("Starting KazaBot...")
     
