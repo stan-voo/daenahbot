@@ -11,7 +11,13 @@ if not TELEGRAM_BOT_TOKEN:
     raise ValueError("No TELEGRAM_BOT_TOKEN found in environment variables")
 
 # Database configuration
-DATABASE_PATH = 'db.json'
+# Use Railway volume for persistent storage
+DATABASE_PATH = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH', '')
+if DATABASE_PATH:
+    DATABASE_PATH = os.path.join(DATABASE_PATH, 'kazabot_db.json')
+else:
+    # Fallback for local development
+    DATABASE_PATH = 'kazabot_db.json'
 
 # Validation constraints
 MAX_DESCRIPTION_LENGTH = 200

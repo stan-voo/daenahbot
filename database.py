@@ -3,12 +3,13 @@ import uuid
 import logging
 from datetime import datetime, timedelta
 from tinydb import TinyDB, Query
+from config import DATABASE_PATH
 
 # Enable logging
 logger = logging.getLogger(__name__)
 
-# Initialize the database
-db = TinyDB('kazabot_db.json', indent=4)
+# Initialize the database with the path from config
+db = TinyDB(DATABASE_PATH, indent=4)
 reports_table = db.table('reports')
 users_table = db.table('users')
 
