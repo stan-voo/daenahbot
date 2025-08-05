@@ -30,6 +30,7 @@ from handlers import (
     CRASH_TIME_DELTA,
     CONFIRMATION,
 )
+from localization import STRINGS
 
 # Simple logging setup
 logging.basicConfig(
@@ -55,19 +56,19 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler("start", start),
-            MessageHandler(filters.Regex(r"^➕ New Report$"), start),
+            MessageHandler(filters.Regex(f"^{STRINGS['new_report_button']}$"), start),
         ],
         states={
             LOCATION: [MessageHandler(filters.LOCATION, location)],
             PHOTO: [MessageHandler(filters.PHOTO, photo)],
             DESCRIPTION: [
-                MessageHandler(filters.Regex(r"(?i)^skip$"), description_skip),
+                MessageHandler(filters.Regex(f"(?i)^{STRINGS['skip_button']}$"), description_skip),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, description),
             ],
             CRASH_TIME_DELTA: [MessageHandler(filters.TEXT & ~filters.COMMAND, crash_time_delta)],
             CONFIRMATION: [
-                MessageHandler(filters.Regex(r"(?i)^Submit Report$"), submit),
-                MessageHandler(filters.Regex(r"(?i)^Cancel$"), cancel),
+                MessageHandler(filters.Regex(f"(?i)^{STRINGS['submit_report_button']}$"), submit),
+                MessageHandler(filters.Regex(f"(?i)^{STRINGS['cancel_button']}$"), cancel),
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
@@ -81,12 +82,12 @@ def main() -> None:
     application.add_handler(CommandHandler("odeme", odeme_command))
     application.add_handler(CommandHandler("bakiye", bakiye_command))
     application.add_handler(CommandHandler("kurallar", kurallar_command))
-    application.add_handler(CommandHandler("destek", destek_command)) # <-- ADD THIS
+    application.add_handler(CommandHandler("destek", destek_command))
 
     # --- Register text button handlers ---
-    application.add_handler(MessageHandler(filters.Regex(r"^💰 Bakiye$"), bakiye_command))
-    application.add_handler(MessageHandler(filters.Regex(r"^📜 Kurallar$"), kurallar_command))
-    application.add_handler(MessageHandler(filters.Regex(r"^📞 Destek$"), destek_command)) # <-- ADD THIS
+    application.add_handler(MessageHandler(filters.Regex(f"^{STRINGS['balance_button']}$"), bakiye_command))
+    application.add_handler(MessageHandler(filters.Regex(f"^{STRINGS['rules_button']}$"), kurallar_command))
+    application.add_handler(MessageHandler(filters.Regex(f"^{STRINGS['support_button']}$"), destek_command))
 
 
     logger.info("Starting KazaBot...")
