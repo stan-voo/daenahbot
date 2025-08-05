@@ -7,6 +7,7 @@
 > * ✅ Enhanced admin notifications with Google Maps links
 > * 🎯 Focus shifted to Turkish localization and enhanced user experience
 > * 🎯 Planning for secure payout information collection
+> * 🆕 Added comprehensive Advanced Analytics section for funnel tracking
 
 ---
 
@@ -230,6 +231,191 @@ def update_report_status(report_id, new_status, admin_id, rejection_reason=None)
 
 ---
 
+## 📊 **Advanced Analytics & Funnel Tracking**
+
+### **F) User Engagement Funnel Analytics**
+
+**Why:** Understanding where users drop off in the reporting process is crucial for improving conversion rates and identifying UX issues.
+
+**Core Funnel Structure:**
+```
+START → LOCATION → PHOTO → DESCRIPTION → TIME_DELTA → CONFIRMATION → SUBMIT → VERIFIED/REJECTED
+```
+
+### **G) Event Tracking System**
+
+**Implementation Plan:**
+
+1. **Create Analytics Events Table:**
+   ```python
+   # In database.py
+   events_table = db.table('analytics_events')
+   
+   def log_funnel_event(user_id, event_type, metadata=None):
+       """Log user actions for funnel analytics"""
+       event = {
+           'event_id': str(uuid.uuid4()),
+           'user_id': user_id,
+           'event_type': event_type,
+           'timestamp': datetime.utcnow().isoformat(),
+           'session_id': metadata.get('session_id') if metadata else None,
+           'metadata': metadata or {}
+       }
+       events_table.insert(event)
+       return event['event_id']
+   ```
+
+2. **Track Each Funnel Step:**
+   - FUNNEL_START (with trigger source: button vs command)
+   - FUNNEL_LOCATION_SHARED
+   - FUNNEL_PHOTO_UPLOADED
+   - FUNNEL_DESCRIPTION_ADDED / FUNNEL_DESCRIPTION_SKIPPED
+   - FUNNEL_TIME_PROVIDED
+   - FUNNEL_REPORT_REVIEWED
+   - FUNNEL_REPORT_SUBMITTED
+   - FUNNEL_REPORT_VERIFIED / FUNNEL_REPORT_REJECTED
+   - FUNNEL_ABANDONED (with abandonment stage)
+
+3. **Session-Level Tracking:**
+   ```python
+   # Generate session ID when starting new report
+   context.user_data['session_id'] = str(uuid.uuid4())
+   context.user_data['session_start'] = datetime.utcnow()
+   
+   # Track session duration and completion
+   context.user_data['state_timestamps'] = {}
+   ```
+
+### **H) Analytics Dashboard Command**
+
+**Admin-Only Analytics Command:**
+```python
+async def analytics_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Generate funnel analytics report for admins"""
+    if update.message.from_user.id not in ADMIN_IDS:
+        return
+    
+    # Time period selection (default: last 7 days)
+    period = context.args[0] if context.args else '7'
+    
+    funnel_stats = calculate_funnel_metrics(days=int(period))
+    
+    report = generate_analytics_report(funnel_stats)
+    await update.message.reply_text(report, parse_mode='Markdown')
+```
+
+**Metrics to Track:**
+- **Conversion Rates:** At each funnel step
+- **Drop-off Points:** Where users abandon most frequently
+- **Time Metrics:** Average time per step, total completion time
+- **User Segments:** New vs returning users, by district, by time of day
+- **Quality Metrics:** Verification rate, rejection reasons distribution
+
+### **I) Advanced Analytics Features**
+
+1. **Cohort Analysis:**
+   ```python
+   def analyze_cohorts(cohort_size='weekly'):
+       """Track user behavior by signup date cohorts"""
+       # Group users by registration week/month
+       # Track their long-term engagement patterns
+       # Identify which cohorts have best retention
+   ```
+
+2. **Geographic Performance:**
+   ```python
+   def analyze_geographic_performance():
+       """Analyze conversion rates by location"""
+       # Conversion rates by district
+       # Report density heatmaps
+       # Out-of-zone submission patterns
+       # Travel time correlations
+   ```
+
+3. **Temporal Patterns:**
+   ```python
+   def analyze_temporal_patterns():
+       """Identify time-based trends"""
+       # Peak submission hours
+       # Day of week patterns
+       # Response time by hour
+       # Admin review delays
+   ```
+
+4. **User Behavior Segmentation:**
+   ```python
+   def segment_users():
+       """Classify users by behavior patterns"""
+       # Power users (high completion rate)
+       # Churned users (started but never completed)
+       # Quality reporters (high verification rate)
+       # Problem reporters (high rejection rate)
+   ```
+
+### **J) Automated Reporting & Alerts**
+
+1. **Daily/Weekly Automated Reports:**
+   ```python
+   async def send_daily_analytics():
+       """Send automated daily analytics to admins"""
+       # Yesterday's funnel performance
+       # Week-over-week comparison
+       # Notable changes or anomalies
+       # Top performing districts
+   ```
+
+2. **Real-Time Alerts:**
+   ```python
+   async def check_analytics_thresholds():
+       """Alert admins when metrics cross thresholds"""
+       # Conversion rate drops below 60%
+       # Unusual spike in abandonments
+       # High rejection rate period
+       # No reports in active hours
+   ```
+
+3. **Export Capabilities:**
+   ```python
+   async def export_analytics_command(update, context):
+       """Export analytics data as CSV"""
+       # Generate CSV with raw event data
+       # Include calculated metrics
+       # Send as document to admin
+   ```
+
+### **K) Predictive Analytics**
+
+1. **Churn Prediction:**
+   - Identify users likely to stop using the bot
+   - Target with engagement campaigns
+
+2. **Quality Prediction:**
+   - Predict likelihood of report verification based on user history
+   - Flag potentially problematic reports for priority review
+
+3. **Peak Time Prediction:**
+   - Forecast busy periods for admin preparation
+   - Optimize notification timing
+
+### **L) A/B Testing Framework**
+
+```python
+def assign_test_group(user_id, test_name):
+    """Assign users to A/B test groups"""
+    # Consistent assignment based on user_id
+    # Track variant performance
+    # Statistical significance calculation
+```
+
+**Potential Tests:**
+- Welcome message variations
+- Reward amount experiments
+- UI button placements
+- Notification timing
+- Language/tone variations
+
+---
+
 ## 📅 **Implementation Roadmap**
 
 ### **Week 1 — Localization & UX**
@@ -245,11 +431,26 @@ def update_report_status(report_id, new_status, admin_id, rejection_reason=None)
 4. Set up secure database for sensitive data
 5. Test payout eligibility triggers
 
-### **Week 3 — Security & Polish**
+### **Week 3 — Basic Analytics Implementation**
+1. Create analytics events table
+2. Implement event logging for all funnel steps
+3. Add session tracking
+4. Create basic `/analytics` command for admins
+5. Test funnel tracking accuracy
+
+### **Week 4 — Advanced Analytics & Optimization**
+1. Implement cohort analysis
+2. Add geographic and temporal analytics
+3. Create automated daily reports
+4. Set up threshold alerts
+5. Deploy A/B testing framework
+
+### **Week 5 — Security & Polish**
 1. Implement secure data access patterns
 2. Add admin commands for payout info viewing
 3. Create data export functionality for admins
 4. Comprehensive testing of all flows
+5. Performance optimization for analytics queries
 
 ---
 
@@ -257,9 +458,10 @@ def update_report_status(report_id, new_status, admin_id, rejection_reason=None)
 
 1. **Never log sensitive data** - No IBANs or full names in logs
 2. **Separate databases** - Keep financial data in separate, gitignored file
-3. **Access control** - Only admins can view payout information
+3. **Access control** - Only admins can view payout information and analytics
 4. **Data minimization** - Only collect what's absolutely necessary
 5. **Regular backups** - Implement automated secure backups for Railway
+6. **Analytics privacy** - Anonymize user data in exported analytics
 
 ---
 
@@ -271,3 +473,7 @@ def update_report_status(report_id, new_status, admin_id, rejection_reason=None)
 * **Two-factor confirmation** for large payouts
 * **Automated zone checking** using geocoding APIs
 * **Multi-language support** (Turkish/English toggle)
+* **Machine learning** for fraud detection and quality prediction
+* **Integration with BI tools** (Metabase, Grafana) for advanced visualization
+* **WhatsApp Business API** integration for multi-channel support
+* **Progressive Web App** dashboard for admins

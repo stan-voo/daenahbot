@@ -6,8 +6,44 @@
             "created_at": "2025-08-04T19:42:00.551113",
             "courier_company": null,
             "payment_method": null,
-            "report_count": 6,
-            "balance": 300
+            "report_count": 10,
+            "balance": 500
+        },
+        "2": {
+            "telegram_user_id": 4462330,
+            "username": "mrvooooo",
+            "created_at": "2025-08-04T22:33:07.017443",
+            "courier_company": null,
+            "payment_method": null,
+            "report_count": 1,
+            "balance": 99
+        },
+        "3": {
+            "telegram_user_id": 88070794,
+            "username": "huseyin8051",
+            "created_at": "2025-08-05T10:46:33.350889",
+            "courier_company": null,
+            "payment_method": null,
+            "report_count": 0,
+            "balance": 99
+        },
+        "4": {
+            "telegram_user_id": 5102120040,
+            "username": null,
+            "created_at": "2025-08-05T13:23:22.311668",
+            "courier_company": null,
+            "payment_method": null,
+            "report_count": 0,
+            "balance": 99
+        },
+        "5": {
+            "telegram_user_id": 764067662,
+            "username": "s_ba4",
+            "created_at": "2025-08-05T14:39:48.558283",
+            "courier_company": null,
+            "payment_method": null,
+            "report_count": 1,
+            "balance": 199
         }
     },
     "reports": {
@@ -110,6 +146,106 @@
             "crash_time_delta": 1,
             "submitted_at": "2025-08-04T22:02:28.126975",
             "status": "verified",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "7": {
+            "report_id": "e41ebeb7-bc57-4edc-a65a-f75711f57464",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.433063,
+                27.164084
+            ],
+            "location_time": "2025-08-04T22:12:19.814279",
+            "photo_file_id": "AgACAgQAAxkBAAIB_2iRME2vZqCAm_Zizdki6MeB_GIHAAKyyzEb1daIUFuFSYgmaNOQAQADAgADeQADNgQ",
+            "photo_time": "2025-08-04T22:12:29.936404",
+            "description": "Google Maps link",
+            "crash_time_delta": 1,
+            "submitted_at": "2025-08-04T22:12:45.329849",
+            "status": "rejected",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "8": {
+            "report_id": "c71ff44b-d197-4636-9fa3-b6a41db2f1d7",
+            "telegram_user_id": 4462330,
+            "location_geo": [
+                38.432973,
+                27.161832
+            ],
+            "location_time": "2025-08-04T22:33:09.684168",
+            "photo_file_id": "AgACAgIAAxkBAAICD2iRNSx09eD80tFXZCQzGXLL3pUfAAIGBTIbmVGISPU3GM978wIuAQADAgADeQADNgQ",
+            "photo_time": "2025-08-04T22:33:16.647391",
+            "description": null,
+            "crash_time_delta": 0,
+            "submitted_at": "2025-08-04T22:33:23.973305",
+            "status": "pending",
+            "reward_sent": false
+        },
+        "9": {
+            "report_id": "64653d8b-a0cd-40b7-8c0e-251e3911cbb8",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.433063,
+                27.164084
+            ],
+            "location_time": "2025-08-05T04:05:38.265986",
+            "photo_file_id": "AgACAgQAAxkBAAICLGiRgxuToF15IYknmz9C9Hvgc6MmAALTyzEb1daIUNuGbQZmKnYSAQADAgADeQADNgQ",
+            "photo_time": "2025-08-05T04:05:47.460805",
+            "description": null,
+            "crash_time_delta": 0,
+            "submitted_at": "2025-08-05T04:05:53.681675",
+            "status": "pending",
+            "reward_sent": false
+        },
+        "10": {
+            "report_id": "74e3784a-5372-45a7-a6c8-a97c25ec9bc4",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.432218,
+                27.138488
+            ],
+            "location_time": "2025-08-05T08:45:51.530353",
+            "photo_file_id": "AgACAgQAAxkBAAICQWiRxMglurLpYAW4XzVa81deJZJQAAJQzDEb1daIUPETz1SASxcYAQADAgADeQADNgQ",
+            "photo_time": "2025-08-05T08:46:00.953542",
+            "description": "Localisation test",
+            "crash_time_delta": 1,
+            "submitted_at": "2025-08-05T08:46:20.346880",
+            "status": "onayland\u0131",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "11": {
+            "report_id": "3492f8a7-c29e-4bed-b62a-c0b9d33f09b4",
+            "telegram_user_id": 7127606451,
+            "location_geo": [
+                38.428938,
+                27.138661
+            ],
+            "location_time": "2025-08-05T09:51:15.190640",
+            "photo_file_id": "AgACAgQAAxkBAAICXWiR1ByWfEW-W-0vfJbqFmy_EBmiAAJvzDEb1daIUJ6yMIY22VEvAQADAgADeQADNgQ",
+            "photo_time": "2025-08-05T09:51:24.856454",
+            "description": "Doctors",
+            "crash_time_delta": 1,
+            "submitted_at": "2025-08-05T09:51:35.626225",
+            "status": "onayland\u0131",
+            "reward_sent": false,
+            "reviewed_by": 4462330
+        },
+        "12": {
+            "report_id": "7fc20c0c-ebe1-4b01-9262-550192c4fb63",
+            "telegram_user_id": 764067662,
+            "location_geo": [
+                38.451551,
+                27.186663
+            ],
+            "location_time": "2025-08-05T14:40:00.553301",
+            "photo_file_id": "AgACAgQAAxkBAAICgmiSF8tfrSAdV9vdBd6AkdvPf7aGAAKNyjEbN5CQUEqhvu0yG43qAQADAgADeQADNgQ",
+            "photo_time": "2025-08-05T14:40:11.805810",
+            "description": null,
+            "crash_time_delta": 5,
+            "submitted_at": "2025-08-05T14:40:26.408105",
+            "status": "onayland\u0131",
             "reward_sent": false,
             "reviewed_by": 4462330
         }
