@@ -34,6 +34,7 @@ The project maintains a clean, modular architecture optimized for production dep
 - **Initial Balance:** 99 TL starting balance for new users
 - **Clear Expectations:** 100 TL reward per verified report, 500 TL withdrawal threshold
 - **Streamlined Flow:** Company name collection disabled for reduced friction
+- **Smart Start Handler:** Differentiates between first-time users and returning users via "➕ New Report" button
 
 #### **Report Submission Process**
 - **Location Sharing:** GPS coordinates via Telegram's native location feature
@@ -41,19 +42,23 @@ The project maintains a clean, modular architecture optimized for production dep
 - **Optional Description:** 200-character limit text descriptions
 - **Time Recording:** Crash occurrence timing (0-60 minutes ago)
 - **Confirmation Review:** Complete summary before submission
-- **Persistent UI:** "➕ New Report" button for easy subsequent reports
+- **Persistent UI:** Main menu with "➕ New Report", "💰 Bakiye", "📜 Kurallar", and "📞 Destek" buttons
 
 #### **User Account Management**
 - **Automatic Registration:** Seamless user profile creation on first interaction
 - **Balance Tracking:** Real-time balance updates with transaction history
 - **Report History:** Complete submission and verification tracking
 - **Reward Processing:** Automatic balance increments for verified reports
+- **Balance Check Command:** `/bakiye` command and button for instant balance viewing
+- **Rules Command:** `/kurallar` command displaying reward amounts, thresholds, and service zones
+- **Support Command:** `/destek` command providing direct support contact
 
 ### **Admin Features**
 
 #### **Real-Time Notification System**
 - **Instant Alerts:** Immediate Telegram notifications for new reports
 - **Complete Data:** Report ID, user info, description, timing, and photo
+- **Google Maps Integration:** Direct clickable link to accident location on Google Maps
 - **Inline Review:** Approve/Reject buttons directly in notifications
 - **Admin Tracking:** Records which admin reviewed each report
 
@@ -62,6 +67,12 @@ The project maintains a clean, modular architecture optimized for production dep
 - **User Notifications:** Automatic feedback on report status changes
 - **Balance Management:** Automatic reward distribution for approved reports
 - **Audit Trail:** Complete review history with admin attribution
+
+#### **Payout Administration**
+- **Admin-Only Command:** `/odeme <user_id> <amount>` for processing payouts
+- **Balance Validation:** Ensures sufficient user balance before payout
+- **Dual Confirmation:** Notifies both admin and user of successful payout
+- **Transaction Logging:** Complete payout history with admin attribution
 
 ### **Technical Infrastructure**
 
@@ -95,8 +106,8 @@ The TinyDB database contains two optimized tables:
   "created_at": "2025-08-04T19:42:00.551113",
   "courier_company": null,
   "payment_method": null,
-  "report_count": 2,
-  "balance": 299
+  "report_count": 6,
+  "balance": 300
 }
 ```
 
@@ -136,9 +147,9 @@ The TinyDB database contains two optimized tables:
 
 Based on `local_backup.json`, the system currently manages:
 - **Active Users:** 1 user with complete profile
-- **Report History:** 2 verified reports
-- **Balance Management:** 299 TL in user balances
-- **Geographic Coverage:** İzmir, Turkey (Konak/Bornova districts)
+- **Report History:** 6 verified reports
+- **Balance Management:** 300 TL in user balances
+- **Geographic Coverage:** İzmir, Turkey (Buca and Gaziemir districts)
 - **Admin Team:** 1 active reviewer (ID: 4462330)
 
 ## 7. Key Implementation Decisions
@@ -164,9 +175,12 @@ The bot has successfully transitioned from development to a production-ready sta
 
 ✅ **Persistent Data Storage** - Railway volume implementation complete  
 ✅ **User Reward System** - Balance tracking and automatic payouts functional  
-✅ **Admin Review Workflow** - Complete notification and approval system  
+✅ **Admin Review Workflow** - Complete notification and approval system with Google Maps integration  
 ✅ **Error-Resistant Communications** - Markdown parsing issues resolved  
 ✅ **Production Deployment** - Railway.app hosting with zero-downtime deploys  
 ✅ **Remote Database Access** - SSH-based database inspection capability  
+✅ **Payout Administration** - Admin-controlled payout command with balance validation  
+✅ **Essential User Commands** - Balance check, rules display, and support contact implemented  
+✅ **Enhanced UX** - Persistent button interface for easy navigation  
 
-The system is currently operational and processing real accident reports with a verified reward distribution mechanism.
+The system is currently operational and processing real accident reports with a verified reward distribution mechanism and complete payout functionality.

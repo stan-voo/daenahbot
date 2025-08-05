@@ -1,207 +1,273 @@
 # **Daenah Bot — Next Actions (Updated)**
 
-> **What’s new in this update**
+> **What's new in this update**
 >
-> * Added **/kurallar (Rules)** command that was missing.
-> * Reinstated the explicit decision: **do not collect phone numbers** in the MVP.
-> * Documented that **Telegram ********`user.id`******** is stable** (no action required).
-> * Clarified **admin notification link** format to avoid `parse_mode` issues.
+> * ✅ Implemented payout logic with `/odeme` command
+> * ✅ Added essential user commands (`/bakiye`, `/kurallar`, `/destek`)
+> * ✅ Enhanced admin notifications with Google Maps links
+> * 🎯 Focus shifted to Turkish localization and enhanced user experience
+> * 🎯 Planning for secure payout information collection
 
 ---
 
-## ✅ **Completed Foundation (Tier 1)**
+## ✅ **Completed Features (Foundation Complete)**
 
 ### **1) Stable Database Using Railway Volumes**
-
 * **Status:** ✅ Completed
-* **Implementation:** Persistent volume mounted at `/data`; DB path set to `/data/kazabot_db.json`.
-* **Remote Read (one-liner):**
-
-  ```bash
-  railway ssh -- cat /data/kazabot_db.json > local_backup.json
-  ```
-* **Result:** Data persists across deploys/restarts.
+* **Implementation:** Persistent volume mounted at `/data`; DB path set to `/data/kazabot_db.json`
 
 ### **2) User Balance & Reward System**
-
 * **Status:** ✅ Completed
-* **Notes:**
+* **Features:** Starting balance (99 TL), reward per report (100 TL), real-time updates
 
-  * Starting balance for new users (configurable)
-  * +100 ₺ (configurable) for each verified report
-  * Real‑time balance updates
-
-### **3) Remove Company Name Flow & UX Cleanup**
-
+### **3) Payout Logic**
 * **Status:** ✅ Completed
-* **Impact:** Fewer fields → higher completion rate
+* **Implementation:** Admin-only `/odeme <user_id> <amount>` command with balance validation
 
-### **4) Error-Resistant Communications**
-
+### **4) Essential User Commands**
 * **Status:** ✅ Completed
-* **Decision:** Avoid `parse_mode` to prevent crashes from user input; prefer plain text/URLs.
+* **Commands:** `/bakiye` (balance), `/kurallar` (rules), `/destek` (support)
+* **UI:** Persistent keyboard buttons for easy access
+
+### **5) Enhanced Admin Notifications**
+* **Status:** ✅ Completed
+* **Feature:** Google Maps link in admin notifications for easy location verification
 
 ---
 
-## 🎯 **Current Priority (Tier 2)**
+## 🎯 **Current Priority: Localization & UX Enhancement**
 
-### **A) Implement Payout Logic**
+### **A) Turkish Localization**
 
-* **Why:** Core loop is *Report → Verify → Get Paid*.
-* **Command:** Admin-only `/odeme <user_id> <amount>`
-* **Spec:**
+**Why:** Your target users are Turkish motor couriers. Full Turkish localization is essential for adoption.
 
-  * Reject if caller is not in `ADMIN_IDS`.
-  * Subtract `<amount>` from user balance (insist on sufficient funds).
-  * Confirm to admin; notify the user.
-* **Sample (python-telegram-bot v20 async):**
+**Action Plan:**
+1. **Create a `localization.py` file** with all user-facing strings:
+   ```python
+   # localization.py
+   STRINGS = {
+       'welcome_new_user': (
+           "Kazabot'a hoş geldiniz! Size katıldığınız için 99 ₺ başlangıç bakiyesi ekledik. "
+           "Ekibimiz tarafından doğrulanan her kaza raporu için 100 ₺ ödül kazanacaksınız. "
+           "Toplam bakiyeniz 500 ₺'ye ulaştığında kazançlarınızı çekebilirsiniz.\n\n"
+           "Hadi başlayalım! Lütfen aşağıdaki butona basarak kazanın konumunu paylaşın."
+       ),
+       'welcome_returning_user': (
+           "Tekrar hoş geldiniz! Yeni bir kaza raporu oluşturmak için aşağıdaki butona basarak "
+           "kazanın konumunu paylaşın."
+       ),
+       'share_location_button': "Kaza Konumunu Paylaş",
+       'location_received': "Harika! Şimdi, kazanın net bir fotoğrafını çekip bana gönderin.",
+       # ... add all strings
+   }
+   ```
 
-  ```python
-  async def odeme_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-      if update.message.from_user.id not in ADMIN_IDS:
-          await update.message.reply_text("Unauthorized command.")
-          return
-      try:
-          user_id, amount = int(context.args[0]), int(context.args[1])
-      except (IndexError, ValueError):
-          await update.message.reply_text("Usage: /odeme <user_id> <amount>")
-          return
+2. **Update all handlers** to use the localization strings
+3. **Translate button labels** in `NEW_REPORT_KEYBOARD`
 
-      user = get_user_by_id(user_id)
-      if not user:
-          await update.message.reply_text("User not found.")
-          return
+### **B) Smart Welcome Message Handling**
 
-      if user.get('balance', 0) < amount:
-          await update.message.reply_text("Insufficient balance for payout.")
-          return
+**Why:** Returning users shouldn't see the full welcome message when clicking "➕ Yeni Rapor"
 
-      new_balance = update_user_balance(user_id, -amount)
-      await update.message.reply_text(
-          f"Payout of {amount} ₺ for user {user_id} recorded. New balance: {new_balance} ₺"
-      )
-      await context.bot.send_message(
-          chat_id=user_id,
-          text=f"A payout of {amount} ₺ has been processed! Your new balance is {new_balance} ₺."
-      )
-  ```
-
-### **B) Add Essential User Commands**
-
-#### **1. ********`/bakiye`******** — Balance Check**
-
+**Implementation:**
 ```python
-async def bakiye_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    user = get_or_create_user(user_id, update.message.from_user.username)
-    balance = user.get('balance', 0)
-    await update.message.reply_text(
-        f"💰 Bakiye: {balance} ₺\n\n" \
-        f"Ödeme talebi için eşik: {PAYOUT_THRESHOLD} ₺."
-    )
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = update.message.from_user
+    user_profile = get_or_create_user(user.id, user.username)
+    
+    # Check if this is a new user or returning user
+    is_new_user = user_profile.get('report_count', 0) == 0
+    
+    # Send appropriate message
+    if is_new_user:
+        # Send welcome photo and full message
+        await context.bot.send_photo(
+            chat_id=update.effective_chat.id,
+            photo=WELCOME_PHOTO_FILE_ID,
+            caption=STRINGS['welcome_new_user'],
+            reply_markup=location_request_keyboard
+        )
+    else:
+        # Skip photo, send brief message
+        await update.message.reply_text(
+            STRINGS['welcome_returning_user'],
+            reply_markup=location_request_keyboard
+        )
+    
+    return LOCATION
 ```
 
-#### **2. ********`/kurallar`******** — Rules (MISSING → ADDED)**
+### **C) Rejection Reason Feature**
 
-> Communicate the 3 key constraints clearly and consistently: **reward amount**, **payout threshold**, **serviceable zones**.
+**Why:** Users need to understand why their reports were rejected to improve future submissions
 
+**Database Update:**
 ```python
-RULES_TEXT = (
-    "📜 Kurallar\n\n"
-    f"• Doğrulanan rapor ödülü: {REWARD_AMOUNT} ₺\n"
-    f"• Ödeme talebi eşiği: {PAYOUT_THRESHOLD} ₺\n"
-    f"• Hizmet bölgeleri: {SERVICE_ZONES_TEXT}\n\n"
-    "Lütfen sadece hizmet bölgeleri içindeki kazaları bildirin.\n"
-)
-
-async def kurallar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(RULES_TEXT)
+# In update_report_status function
+def update_report_status(report_id, new_status, admin_id, rejection_reason=None):
+    Report = Query()
+    update_data = {'status': new_status, 'reviewed_by': admin_id}
+    if rejection_reason:
+        update_data['rejection_reason'] = rejection_reason
+    reports_table.update(update_data, Report.report_id == report_id)
 ```
 
-* **Config suggestions:**
+**UI Implementation:**
+1. **Add rejection reason buttons** in admin notification:
+   ```python
+   keyboard = [
+       [
+           InlineKeyboardButton("✅ Onayla", callback_data=f"approve_{report_id}"),
+           InlineKeyboardButton("❌ Reddet", callback_data=f"reject_{report_id}")
+       ],
+       [
+           InlineKeyboardButton("🚫 Bölge Dışı", callback_data=f"reject_zone_{report_id}"),
+           InlineKeyboardButton("📸 Belirsiz Fotoğraf", callback_data=f"reject_photo_{report_id}")
+       ],
+       [
+           InlineKeyboardButton("⏰ Geç Bildirim", callback_data=f"reject_late_{report_id}"),
+           InlineKeyboardButton("🔄 Mükerrer", callback_data=f"reject_duplicate_{report_id}")
+       ]
+   ]
+   ```
 
-  ```python
-  REWARD_AMOUNT = 100
-  PAYOUT_THRESHOLD = 500
-  SERVICE_ZONES_TEXT = "İzmir — Konak ve Bornova ilçeleri"
-  ```
-
-#### **3. ********`/destek`******** — Support Contact**
-
-```python
-async def destek_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "📞 Destek: support@daenah.com\nTelegram: @DaenahSupport\nYanıt süresi: 24 saat içinde"
-    )
-```
-
-### **C) Service Zone Management**
-
-* **Welcome Message:** Add explicit zone notice (same text as in `/kurallar`).
-* **BotFather ********`/setdescription`********:** Include the zone restriction line.
-* **Admin Notifications:** Include a **plain URL** to Google Maps to keep `parse_mode` off.
-
-```python
-lat, lon = report_data['location']
-maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
-admin_message = (
-    "🚨 New Accident Report Submitted 🚨\n\n"
-    f"📍 Location (Google Maps): {maps_link}\n"
-    f"Report ID: {report_id}\n"
-    f"Submitted By: @{user.username} (ID: {user.id})\n"
-    f"Description: {report_data.get('description', 'N/A')}\n"
-    f"Time Delta: ~{report_data.get('crash_time_delta')} minutes ago"
-)
-```
-
-### **D) Enable Spam Prevention**
-
-```python
-report_count = get_user_report_count_today(user.id)
-if report_count >= MAX_REPORTS_PER_DAY:
-    await update.message.reply_text(
-        f"Günlük rapor limitinize ({MAX_REPORTS_PER_DAY}) ulaştınız. Lütfen yarın tekrar deneyin."
-    )
-    return ConversationHandler.END
-```
+2. **Update review_handler** to process rejection reasons
+3. **Include reason in user notification**
 
 ---
 
-## 🧭 **Clarifications That Avoid Wasted Work**
+## 🚀 **Next Priority: Secure Payout Information Collection**
 
-### **1) User Identity Handling — No Action Needed**
+### **D) Automatic Payout Eligibility Detection**
 
-* Using `update.message.from_user.id` as the primary key is **correct and stable**. It does **not** change if the user deletes the chat, changes @username, or blocks/unblocks the bot.
+**Implementation Plan:**
 
-### **2) Phone Number Collection — Postponed (MVP)**
+1. **Add a check after balance updates:**
+   ```python
+   # In review_handler, after updating balance
+   if new_balance >= PAYOUT_THRESHOLD:
+       # Check if we already have payout info
+       if not user.get('iban') or not user.get('full_name'):
+           await trigger_payout_info_collection(original_user_id, context)
+   ```
 
-* Additional fields create friction and reduce conversion.
-* Current needs (payouts via IBAN, support via Telegram/email) do **not** require phone numbers.
-* **Revisit** only if a **clear, validated** business need emerges.
+2. **Create payout information collection flow:**
+   ```python
+   # New conversation states
+   COLLECT_IBAN, COLLECT_NAME, CONFIRM_PAYOUT_INFO = range(7, 10)
+   
+   async def trigger_payout_info_collection(user_id, context):
+       message = (
+           "🎉 Tebrikler! Bakiyeniz 500 ₺'ye ulaştı ve ödeme almaya hak kazandınız!\n\n"
+           "Ödemenizi işleme alabilmemiz için bazı bilgilere ihtiyacımız var.\n"
+           "Lütfen IBAN numaranızı gönderin (TR ile başlamalı):"
+       )
+       await context.bot.send_message(chat_id=user_id, text=message)
+   ```
+
+3. **IBAN validation:**
+   ```python
+   def validate_iban(iban):
+       # Remove spaces and convert to uppercase
+       iban = iban.replace(' ', '').upper()
+       # Check if it starts with TR and has correct length
+       if not iban.startswith('TR') or len(iban) != 26:
+           return False
+       # Additional validation logic here
+       return True
+   ```
+
+### **E) Secure Sensitive Data Storage**
+
+**Critical Security Measures:**
+
+1. **Create separate secure database for sensitive data:**
+   ```python
+   # config.py
+   SECURE_DB_PATH = os.path.join(DATABASE_PATH, '..', '.secure_kazabot_db.json')
+   
+   # database.py
+   secure_db = TinyDB(SECURE_DB_PATH, indent=4)
+   payout_info_table = secure_db.table('payout_info')
+   ```
+
+2. **Update `.gitignore`:**
+   ```
+   .env
+   venv/
+   __pycache__/
+   *.pyc
+   db.json
+   .DS_Store
+   .secure_kazabot_db.json  # Add this
+   *secure*.json            # Add this
+   ```
+
+3. **Store sensitive data separately:**
+   ```python
+   def save_payout_info(user_id, iban, full_name):
+       PayoutInfo = Query()
+       payout_data = {
+           'telegram_user_id': user_id,
+           'iban': iban,
+           'full_name': full_name,
+           'created_at': datetime.utcnow().isoformat(),
+           'last_updated': datetime.utcnow().isoformat()
+       }
+       payout_info_table.upsert(payout_data, PayoutInfo.telegram_user_id == user_id)
+   ```
+
+4. **Admin command to view payout info:**
+   ```python
+   async def odeme_bilgileri_command(update, context):
+       # Admin-only command to view user payout info
+       if update.message.from_user.id not in ADMIN_IDS:
+           return
+       
+       # Parse user_id from command
+       # Fetch and display payout info securely
+   ```
 
 ---
 
-## 🚀 **Future Enhancements (Tier 3)**
+## 📅 **Implementation Roadmap**
 
-* **Automated QA:** Service zone auto-check; duplicate detection; basic photo quality checks
-* **Analytics:** Submission patterns, cohort retention; geographic heatmaps
-* **Scaling:** TinyDB → PostgreSQL (>1,000 active users); multi‑language; potential external API integrations
+### **Week 1 — Localization & UX**
+1. Create `localization.py` with all Turkish translations
+2. Implement smart welcome message (new vs returning users)
+3. Update all user-facing text to Turkish
+4. Test with Turkish-speaking users
+
+### **Week 2 — Enhanced Rejection & Payout Flow**
+1. Implement rejection reason buttons and database fields
+2. Create payout information collection conversation flow
+3. Add IBAN validation
+4. Set up secure database for sensitive data
+5. Test payout eligibility triggers
+
+### **Week 3 — Security & Polish**
+1. Implement secure data access patterns
+2. Add admin commands for payout info viewing
+3. Create data export functionality for admins
+4. Comprehensive testing of all flows
 
 ---
 
-## 📅 **Immediate Plan (Next 2 Weeks)**
+## 🔒 **Security Best Practices**
 
-### **Week 1 — Core Commands**
+1. **Never log sensitive data** - No IBANs or full names in logs
+2. **Separate databases** - Keep financial data in separate, gitignored file
+3. **Access control** - Only admins can view payout information
+4. **Data minimization** - Only collect what's absolutely necessary
+5. **Regular backups** - Implement automated secure backups for Railway
 
-1. Implement `/odeme` (admin payouts)
-2. Add `/bakiye` (balance)
-3. **Add ********`/kurallar`******** (rules)** ← *new*
-4. Add `/destek` (support)
-5. E2E test payout flow
+---
 
-### **Week 2 — UX & Governance**
+## 🎯 **Future Enhancements**
 
-1. Update welcome message with zone notice
-2. Update BotFather description with zone notice
-3. Switch admin notification to **plain URL** maps link
-4. Enable spam prevention block
+* **Automated IBAN validation** via Turkish bank API
+* **Payout batch processing** for admins
+* **Export to CSV** for accounting purposes
+* **Two-factor confirmation** for large payouts
+* **Automated zone checking** using geocoding APIs
+* **Multi-language support** (Turkish/English toggle)
