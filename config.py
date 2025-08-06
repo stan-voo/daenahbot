@@ -10,6 +10,12 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 if not TELEGRAM_BOT_TOKEN:
     raise ValueError("No TELEGRAM_BOT_TOKEN found in environment variables")
 
+# Welcome message photo
+WELCOME_PHOTO_FILE_ID = os.getenv('WELCOME_PHOTO_FILE_ID')
+if not WELCOME_PHOTO_FILE_ID:
+    print("Warning: No WELCOME_PHOTO_FILE_ID found in environment variables. The welcome message will be sent without a photo.")
+
+
 # Database configuration
 # Use Railway volume for persistent storage
 DATABASE_PATH = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH', '')

@@ -20,7 +20,7 @@ from database import (
     update_user_balance,
     get_user_by_id
 )
-from config import ADMIN_IDS, PAYOUT_THRESHOLD, REWARD_AMOUNT, SERVICE_ZONES_TEXT
+from config import ADMIN_IDS, PAYOUT_THRESHOLD, REWARD_AMOUNT, SERVICE_ZONES_TEXT, WELCOME_PHOTO_FILE_ID
 from localization import STRINGS # <-- Import the localized strings
 
 # Enable logging
@@ -55,21 +55,29 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     logger.info("User %s started the conversation.", user.first_name)
     
-    photo_file_id = 'AgACAgQAAxkBAAPCaIu8_FQu7pFVNR7X8AAB5O_shWW2AALfxzEbZKFhUOKlznwiwuHuAQADAgADeAADNgQ' 
     get_or_create_user(user.id, user.username)
 
     location_keyboard = KeyboardButton(text=STRINGS['share_location_button'], request_location=True)
     custom_keyboard = [[location_keyboard]]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard, resize_keyboard=True, one_time_keyboard=True)
 
-    await context.bot.send_photo(
-        chat_id=update.effective_chat.id,
-        photo=photo_file_id,
-        caption=STRINGS['welcome_caption'],
-        reply_markup=reply_markup,
-        read_timeout=20,
-        write_timeout=20
-    )
+    if WELCOME_PHOTO_FILE_ID:
+        await context.bot.send_photo(
+            chat_id=update.effective_chat.id,
+            photo=WELCOME_PHOTO_FILE_ID,
+            caption=STRINGS['welcome_caption'],
+            reply_markup=reply_markup,
+            read_timeout=20,
+            write_timeout=20
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=STRINGS['welcome_caption'],
+            reply_markup=reply_markup,
+            read_timeout=20,
+            write_timeout=20
+        )
     return LOCATION
 
 # --- Reporting Flow ---
